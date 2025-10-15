@@ -19,8 +19,8 @@ interface HomePageProps {
   siteSingletonAssets: { [key: string]: string; };
 }
 
-const getImageUrl = (src: string) => {
-    if (!src || src.startsWith('data:image') || src.startsWith('/assets/')) {
+const getMediaUrl = (src: string) => {
+    if (!src || src.startsWith('data:') || src.startsWith('/')) {
         return src;
     }
     // Assume it's a blob key
@@ -152,7 +152,7 @@ export const HomePage: React.FC<HomePageProps> = ({ setActivePage, locationConfi
     >
       <section className="hero-section">
         <div className="hero-video-container">
-          <video autoPlay loop muted playsInline src={getImageUrl(siteSingletonAssets.heroBackgroundVideo)} className="hero-video-bg" key={siteSingletonAssets.heroBackgroundVideo}></video>
+          <video autoPlay loop muted playsInline src={getMediaUrl(siteSingletonAssets.heroBackgroundVideo)} className="hero-video-bg" key={siteSingletonAssets.heroBackgroundVideo}></video>
           <div className="hero-overlay"></div>
         </div>
         <div className="hero-content">
@@ -189,13 +189,13 @@ export const HomePage: React.FC<HomePageProps> = ({ setActivePage, locationConfi
                     {[...trustedByLogos, ...trustedByLogos].map((logo, index) => (
                         <a 
                           href={logo.url} 
-                          key={`${logo.name}-${index}`}
+                          key={`${logo.alt}-${index}`}
                           className="logo-link"
                           target="_blank" 
                           rel="noopener noreferrer"
                           aria-label={`Visit website for ${logo.alt}`}
                         >
-                          <LogoImage src={`/assets/logos/${logo.name}`} alt={logo.alt} />
+                          <LogoImage src={getMediaUrl(logo.src)} alt={logo.alt} />
                         </a>
                     ))}
                 </div>
@@ -211,7 +211,7 @@ export const HomePage: React.FC<HomePageProps> = ({ setActivePage, locationConfi
         variants={containerVariants}
       >
         <motion.div className="intro-image" variants={itemVariants}>
-          <img src={getImageUrl(siteSingletonAssets.homeIntroImage)} alt="Headshot of Olesya Stepaniuk" />
+          <img src={getMediaUrl(siteSingletonAssets.homeIntroImage)} alt="Headshot of Olesya Stepaniuk" />
         </motion.div>
         <motion.div className="intro-text" variants={itemVariants}>
             <AnimatedText text="I'm not just a creator. I'm a performer." el="h2" />
@@ -259,11 +259,12 @@ export const HomePage: React.FC<HomePageProps> = ({ setActivePage, locationConfi
                         <div className="phone-mockup-ugc">
                             <div className="phone-screen">
                                 <video
-                                    src={`/assets/videos/${item.videoSrc}`}
+                                    src={getMediaUrl(item.videoSrc)}
                                     muted
                                     loop
                                     playsInline
                                     className="ugc-video"
+                                    key={item.videoSrc}
                                 >
                                     Your browser does not support the video tag.
                                 </video>
@@ -321,12 +322,13 @@ export const HomePage: React.FC<HomePageProps> = ({ setActivePage, locationConfi
                     </button>
                     <div className="ugc-lightbox-video-container">
                         <video
-                            src={`/assets/videos/${selectedVideo.videoSrc}`}
+                            src={getMediaUrl(selectedVideo.videoSrc)}
                             autoPlay
                             controls
                             loop
                             playsInline
                             className="ugc-lightbox-video"
+                            key={selectedVideo.videoSrc}
                         >
                             Your browser does not support the video tag.
                         </video>

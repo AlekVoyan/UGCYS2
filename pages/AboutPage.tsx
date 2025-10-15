@@ -14,8 +14,8 @@ interface AboutPageProps {
   siteSingletonAssets: { [key: string]: string; };
 }
 
-const getImageUrl = (src: string) => {
-    if (!src || src.startsWith('data:image') || src.startsWith('/assets/')) {
+const getMediaUrl = (src: string) => {
+    if (!src || src.startsWith('data:') || src.startsWith('/')) {
         return src;
     }
     // Assume it's a blob key
@@ -113,7 +113,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ setActivePage, powerCards,
           <p>I blend formal training in Theatre and Film Arts with a deep understanding of digital culture. This academic foundation is my secret weapon in creating content that doesn’t just get seen—it gets felt.</p>
         </motion.div>
         <motion.div className="about-hero-image" variants={itemVariants}>
-          <img src={getImageUrl(siteSingletonAssets.aboutHeroImage)} alt="A professional headshot of Olesya Stepaniuk" />
+          <img src={getMediaUrl(siteSingletonAssets.aboutHeroImage)} alt="A professional headshot of Olesya Stepaniuk" />
         </motion.div>
         <div className="page-title-bg about-title-bg">ABOUT</div>
       </motion.section>
@@ -190,7 +190,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ setActivePage, powerCards,
         variants={containerVariants}
       >
         <motion.div className="academic-edge-image" variants={itemVariants}>
-            <img src={getImageUrl(siteSingletonAssets.aboutAcademicImage)} alt="A visual representing academic study and creativity." />
+            <img src={getMediaUrl(siteSingletonAssets.aboutAcademicImage)} alt="A visual representing academic study and creativity." />
         </motion.div>
         <motion.div className="academic-edge-text" variants={itemVariants}>
             <AnimatedText text="The Academic Edge" el="h2" />
@@ -239,8 +239,9 @@ export const AboutPage: React.FC<AboutPageProps> = ({ setActivePage, powerCards,
                     loop
                     muted
                     playsInline
-                    src={`/assets/videos/${card.videoSrc}`}
+                    src={getMediaUrl(card.videoSrc)}
                     preload="auto"
+                    key={card.videoSrc}
                   ></video>
                 </motion.div>
               </motion.div>

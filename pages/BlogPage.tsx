@@ -34,8 +34,8 @@ const itemVariants: Variants = {
   },
 };
 
-const getImageUrl = (src: string) => {
-    if (!src || src.startsWith('data:image') || src.startsWith('/assets/images/')) {
+const getMediaUrl = (src: string) => {
+    if (!src || src.startsWith('data:') || src.startsWith('/')) {
         return src;
     }
     // Assume it's a blob key
@@ -118,7 +118,7 @@ export const BlogPage: React.FC<BlogPageProps> = ({ onPostSelect, setActivePage,
                             onClick={() => onPostSelect(post)}
                         >
                             <div className="blog-card-image">
-                                <img src={getImageUrl(post.featuredImage || `/assets/images/${post.slug}.jpg`)} alt={`Featured image for blog post titled: ${post.title}`} />
+                                <img src={getMediaUrl(post.featuredImage || `/assets/images/${post.slug}.jpg`)} alt={`Featured image for blog post titled: ${post.title}`} />
                                 <div className="blog-card-category">{post.category}</div>
                             </div>
                             <div className="blog-card-content">

@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './AdminPage.css';
-import { SiteContent, CaseStudyData, BlogPost, PhotoData, SiteAsset, newCaseStudyTemplate, newBlogPostTemplate, CarouselItem, newCarouselItemTemplate } from '../data/content';
+import { SiteContent, CaseStudyData, BlogPost, PhotoData, newCaseStudyTemplate, newBlogPostTemplate, CarouselItem, newCarouselItemTemplate, PowerCardData, newPowerCardTemplate, FeaturedWorkUGC, newFeaturedWorkUGCTemplate, TrustedByLogo, newTrustedByLogoTemplate } from '../data/content';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, LayoutGrid, FileText, Image as ImageIcon, Trash2, PlusCircle, GripVertical, UploadCloud, Search, Archive, ChevronLeft, Menu, Loader, Palette } from 'lucide-react';
+import { ChevronDown, LayoutGrid, FileText, Image as ImageIcon, Trash2, PlusCircle, GripVertical, UploadCloud, Search, ChevronLeft, Menu, Loader, Palette, HelpCircle, Film, Star, Award } from 'lucide-react';
 
 interface AdminPageProps {
   content: SiteContent;
@@ -10,8 +10,8 @@ interface AdminPageProps {
   onLogout: () => void;
 }
 
-const getImageUrl = (src: string) => {
-    if (!src || src.startsWith('data:image') || src.startsWith('/assets/')) {
+const getMediaUrl = (src: string) => {
+    if (!src || src.startsWith('data:') || src.startsWith('/')) {
         return src;
     }
     // Assume it's a blob key
@@ -74,6 +74,13 @@ const resizeImage = (file: File): Promise<string> => {
     });
 };
 
+const Tooltip = ({ text }: { text: string }) => (
+    <div className="tooltip-container">
+        <HelpCircle size={16} className="tooltip-icon" />
+        <div className="tooltip-text">{text}</div>
+    </div>
+);
+
 
 export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, onLogout }) => {
   const [activeSection, setActiveSection] = useState('portfolio-case-studies');
@@ -85,6 +92,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
   const [searchTerms, setSearchTerms] = useState({
     'portfolio-case-studies': '',
     'blog': '',
+    'homepage-ugc-feed': '',
+    'about-power-cards': '',
   });
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -179,40 +188,53 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
   };
 
   // --- ADD/DELETE Functionality ---
-  const addItem = (type: 'caseStudiesData' | 'blogPosts') => {
-    const template = type === 'caseStudiesData' ? newCaseStudyTemplate : newBlogPostTemplate;
+  const addItem = (type: 'caseStudiesData' | 'blogPosts' | 'powerCardsData' | 'featuredWorkDataUGC' | 'trustedByLogos') => {
+    let template;
+    switch(type) {
+        case 'caseStudiesData': template = newCaseStudyTemplate; break;
+        case 'blogPosts': template = newBlogPostTemplate; break;
+        case 'powerCardsData': template = newPowerCardTemplate; break;
+        case 'featuredWorkDataUGC': template = newFeaturedWorkUGCTemplate; break;
+        case 'trustedByLogos': template = newTrustedByLogoTemplate; break;
+    }
     const currentArray = editableContent[type];
     const newArray = [JSON.parse(JSON.stringify(template)), ...currentArray];
     setEditableContent({ ...editableContent, [type]: newArray });
-    setOpenAccordion(`${type.replace('Data', '').replace('s', '')}-0`);
+    if (type !== 'trustedByLogos') {
+      setOpenAccordion(`${type.replace('Data', '').replace('s', '')}-0`);
+    }
   };
 
-  const deleteItem = async (type: 'caseStudiesData' | 'blogPosts' | 'photosData', index: number) => {
+  const deleteItem = async (type: 'caseStudiesData' | 'blogPosts' | 'photosData' | 'powerCardsData' | 'featuredWorkDataUGC' | 'trustedByLogos', index: number) => {
     if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
         return;
     }
 
+    const itemToDelete = (editableContent as any)[type][index];
+    let keyToDelete = '';
+
     if (type === 'photosData') {
-        const photoToDelete = editableContent.photosData[index];
-        const isBlob = !photoToDelete.src.startsWith('data:image');
-        if (isBlob) {
-            // It's a blob key, so we need to delete it from the store
-            try {
-                const user = window.netlifyIdentity?.currentUser();
-                if (!user) throw new Error("User not authenticated.");
-                const token = await user.jwt();
-                
-                const response = await fetch('/.netlify/functions/delete-blob', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ key: photoToDelete.src })
-                });
-                if (!response.ok) throw new Error("Failed to delete from blob storage.");
-            } catch (error) {
-                console.error("Failed to delete blob:", error);
-                alert("Could not delete image from storage. Please try again.");
-                return;
-            }
+        keyToDelete = itemToDelete.src;
+    } else if (type === 'trustedByLogos') {
+        keyToDelete = itemToDelete.src;
+    }
+
+    if (keyToDelete && !keyToDelete.startsWith('data:image')) {
+        try {
+            const user = window.netlifyIdentity?.currentUser();
+            if (!user) throw new Error("User not authenticated.");
+            const token = await user.jwt();
+            
+            const response = await fetch('/.netlify/functions/delete-blob', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ key: keyToDelete })
+            });
+            if (!response.ok) throw new Error("Failed to delete from blob storage.");
+        } catch (error) {
+            console.error("Failed to delete blob:", error);
+            alert("Could not delete image from storage. Please try again.");
+            return;
         }
     }
     
@@ -329,6 +351,39 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
                 searchTerm={searchTerms['blog']}
                 onSearchChange={(value) => handleSearchChange('blog', value)}
             />;
+        case 'homepage-ugc-feed':
+            return <ListEditor
+                title="Homepage UGC Feed"
+                items={editableContent.featuredWorkDataUGC}
+                onAdd={() => addItem('featuredWorkDataUGC')}
+                onDelete={(index) => deleteItem('featuredWorkDataUGC', index)}
+                openAccordion={openAccordion}
+                toggleAccordion={toggleAccordion}
+                renderForm={(item, index) => <FeaturedWorkUGCForm item={item} index={index} onChange={handleFieldChange} />}
+                prefix="ugc"
+                searchTerm={searchTerms['homepage-ugc-feed']}
+                onSearchChange={(value) => handleSearchChange('homepage-ugc-feed', value)}
+            />;
+        case 'trusted-by-logos':
+            return <TrustedByLogosEditor
+                logos={editableContent.trustedByLogos}
+                onAdd={() => addItem('trustedByLogos')}
+                onDelete={(index) => deleteItem('trustedByLogos', index)}
+                onChange={handleFieldChange}
+            />;
+        case 'about-power-cards':
+            return <ListEditor
+                title="About Page Power Cards"
+                items={editableContent.powerCardsData}
+                onAdd={() => addItem('powerCardsData')}
+                onDelete={(index) => deleteItem('powerCardsData', index)}
+                openAccordion={openAccordion}
+                toggleAccordion={toggleAccordion}
+                renderForm={(item, index) => <PowerCardForm item={item} index={index} onChange={handleFieldChange} />}
+                prefix="pc"
+                searchTerm={searchTerms['about-power-cards']}
+                onSearchChange={(value) => handleSearchChange('about-power-cards', value)}
+            />;
         case 'page-visuals':
             return <PageVisualsEditor 
                 assets={editableContent.siteSingletonAssets}
@@ -336,8 +391,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
                 uploadingStates={uploadingSingletonAssets}
                 setUploadingState={(key, isUploading) => setUploadingSingletonAssets(prev => ({...prev, [key]: isUploading}))}
             />;
-        case 'site-assets':
-            return <SiteAssetsViewer assets={editableContent.siteAssets} />;
         default:
             return <p>Select a section to edit.</p>;
     }
@@ -367,10 +420,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
                 <li><button onClick={() => {setActiveSection('portfolio-photos'); setIsMobileMenuOpen(false);}} className={activeSection === 'portfolio-photos' ? 'active' : ''}><ImageIcon size={18} /> <span>Photos</span></button></li>
                 <li className="nav-category">Content</li>
                 <li><button onClick={() => {setActiveSection('blog'); setIsMobileMenuOpen(false);}} className={activeSection === 'blog' ? 'active' : ''}><FileText size={18} /> <span>Blog Posts</span></button></li>
+                <li className="nav-category">Homepage</li>
+                <li><button onClick={() => {setActiveSection('homepage-ugc-feed'); setIsMobileMenuOpen(false);}} className={activeSection === 'homepage-ugc-feed' ? 'active' : ''}><Film size={18} /> <span>UGC Feed</span></button></li>
+                <li><button onClick={() => {setActiveSection('trusted-by-logos'); setIsMobileMenuOpen(false);}} className={activeSection === 'trusted-by-logos' ? 'active' : ''}><Award size={18} /> <span>Trusted By Logos</span></button></li>
+                <li className="nav-category">About Page</li>
+                <li><button onClick={() => {setActiveSection('about-power-cards'); setIsMobileMenuOpen(false);}} className={activeSection === 'about-power-cards' ? 'active' : ''}><Star size={18} /> <span>Power Cards</span></button></li>
                 <li className="nav-category">Site Design</li>
                 <li><button onClick={() => {setActiveSection('page-visuals'); setIsMobileMenuOpen(false);}} className={activeSection === 'page-visuals' ? 'active' : ''}><Palette size={18} /> <span>Page Visuals</span></button></li>
-                <li className="nav-category">Site Assets</li>
-                <li><button onClick={() => {setActiveSection('site-assets'); setIsMobileMenuOpen(false);}} className={activeSection === 'site-assets' ? 'active' : ''}><Archive size={18} /> <span>All Media Files</span></button></li>
             </ul>
             <div className="admin-sidebar-footer">
                 <button onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}>
@@ -420,7 +476,7 @@ const ListEditor: React.FC<ListEditorProps> = ({ title, items, onAdd, onDelete, 
     const filteredItems = items
         .map((item, index) => ({ item, originalIndex: index }))
         .filter(({ item }) =>
-            (item.title || item.brand || '').toLowerCase().includes(searchTerm.toLowerCase())
+            (item.title || item.brand || item.username || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
 
     return (
@@ -445,7 +501,7 @@ const ListEditor: React.FC<ListEditorProps> = ({ title, items, onAdd, onDelete, 
                     {filteredItems.map(({ item, originalIndex }) => (
                         <div key={originalIndex} className="accordion-item">
                             <div className="accordion-header" onClick={() => toggleAccordion(`${prefix}-${originalIndex}`)}>
-                                <span>{item.title || 'Untitled'}</span>
+                                <span>{item.title || item.brand || item.username || 'Untitled'}</span>
                                 <div className="accordion-actions">
                                     <button className="delete-button" onClick={(e) => { e.stopPropagation(); onDelete(originalIndex); }}><Trash2 size={16}/></button>
                                     <ChevronDown className={`accordion-chevron ${openAccordion === `${prefix}-${originalIndex}` ? 'open' : ''}`} />
@@ -672,10 +728,10 @@ const BlogPostForm = ({ item, index, onChange }: { item: BlogPost, index: number
     return (
         <div className="admin-form">
             <div className="form-section">
-                <label>Featured Image</label>
+                <label>Featured Image <Tooltip text="Recommended: 16:9 aspect ratio, optimized JPEG under 800KB." /></label>
                 {item.featuredImage ? (
                     <div className="image-preview-container">
-                        <img src={getImageUrl(item.featuredImage)} alt="Featured" className="image-preview" />
+                        <img src={getMediaUrl(item.featuredImage)} alt="Featured" className="image-preview" />
                         <button onClick={handleRemoveImage} className="remove-image-button">Remove Image</button>
                     </div>
                 ) : (
@@ -706,9 +762,12 @@ const PhotoEditor = ({ photos, onUploadClick, onDelete, dragItem, dragOverItem, 
     <section>
         <div className="section-header">
             <h3>Photo Gallery</h3>
-            <button className="upload-button" onClick={onUploadClick} disabled={uploadingFiles.length > 0}>
-                {uploadingFiles.length > 0 ? <><Loader className="spinner" size={16}/> Uploading...</> : <><UploadCloud size={16}/> Upload Photos</>}
-            </button>
+            <div className="section-header-actions">
+                <Tooltip text="Recommended: Square (1:1 aspect ratio), optimized JPEG under 500KB." />
+                <button className="upload-button" onClick={onUploadClick} disabled={uploadingFiles.length > 0}>
+                    {uploadingFiles.length > 0 ? <><Loader className="spinner" size={16}/> Uploading...</> : <><UploadCloud size={16}/> Upload Photos</>}
+                </button>
+            </div>
         </div>
         <p className="helper-text">Drag and drop photos to reorder them for the portfolio page.</p>
         <div className="photo-admin-grid">
@@ -728,7 +787,7 @@ const PhotoEditor = ({ photos, onUploadClick, onDelete, dragItem, dragOverItem, 
                     onDragEnd={onDragSort}
                     onDragOver={(e) => e.preventDefault()}
                 >
-                    <img src={getImageUrl(photo.src)} alt={photo.alt} />
+                    <img src={getMediaUrl(photo.src)} alt={photo.alt} />
                     <div className="photo-admin-overlay">
                         <GripVertical className="drag-handle" size={20} />
                         <button className="delete-button" onClick={() => onDelete(index)}><Trash2 size={16}/></button>
@@ -739,12 +798,12 @@ const PhotoEditor = ({ photos, onUploadClick, onDelete, dragItem, dragOverItem, 
     </section>
 );
 
-const assetLabels: { [key: string]: { label: string; type: 'image' | 'video' } } = {
-  heroBackgroundVideo: { label: 'Homepage Hero Background', type: 'video' },
-  homeIntroImage: { label: 'Homepage Intro Section Image', type: 'image' },
-  aboutHeroImage: { label: 'About Page Hero Image', type: 'image' },
-  aboutAcademicImage: { label: 'About Page "Academic Edge" Image', type: 'image' },
-  contactVisualImage: { label: 'Contact Page Visual', type: 'image' },
+const assetLabels: { [key: string]: { label: string; type: 'image' | 'video', tip: string } } = {
+  heroBackgroundVideo: { label: 'Homepage Hero Background', type: 'video', tip: '1920x1080 (16:9). Keep file size small (<10MB) for fast loading.' },
+  homeIntroImage: { label: 'Homepage Intro Section Image', type: 'image', tip: 'Recommended: Portrait orientation, optimized JPEG < 500KB.' },
+  aboutHeroImage: { label: 'About Page Hero Image', type: 'image', tip: 'Recommended: Portrait orientation, optimized PNG for transparency if needed.' },
+  aboutAcademicImage: { label: 'About Page "Academic Edge" Image', type: 'image', tip: 'Recommended: Landscape (4:5 ratio), optimized JPEG < 600KB.' },
+  contactVisualImage: { label: 'Contact Page Visual', type: 'image', tip: 'Recommended: Portrait or square, optimized JPEG < 500KB.' },
 };
 
 const processFileForUpload = (file: File, assetType: 'image' | 'video'): Promise<string> => {
@@ -809,13 +868,13 @@ const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingStat
             <p className="helper-text">Manage the main images and videos that appear on key pages of your site. Uploading a new file will automatically replace the old one.</p>
             <div className="visuals-grid">
                 {Object.keys(assetLabels).map(key => {
-                    const { label, type } = assetLabels[key];
+                    const { label, type, tip } = assetLabels[key];
                     const src = assets[key];
                     const isUploading = uploadingStates[key];
 
                     return (
                         <div key={key} className="visual-card">
-                            <h4>{label}</h4>
+                            <h4>{label} <Tooltip text={tip} /></h4>
                             <div className="visual-preview">
                                 {isUploading ? (
                                     <div className="visual-loading-overlay">
@@ -824,15 +883,14 @@ const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingStat
                                     </div>
                                 ) : (
                                     type === 'image' ?
-                                        <img src={getImageUrl(src)} alt={label} key={src} /> :
-                                        <video src={getImageUrl(src)} muted autoPlay loop playsInline key={src}/>
+                                        <img src={getMediaUrl(src)} alt={label} key={src} /> :
+                                        <video src={getMediaUrl(src)} muted autoPlay loop playsInline key={src}/>
                                 )}
                             </div>
                             <input
                                 type="file"
                                 accept={type === 'image' ? 'image/*' : 'video/*'}
                                 style={{ display: 'none' }}
-                                // FIX: The ref callback function should not return a value. Wrapped the assignment in braces to ensure it returns void.
                                 ref={(el) => { fileInputRefs.current[key] = el; }}
                                 onChange={(e) => handleFileChange(e, key, type)}
                             />
@@ -851,41 +909,229 @@ const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingStat
     );
 };
 
-const SiteAssetsViewer = ({ assets }: { assets: SiteAsset[] }) => {
-    const [activeTab, setActiveTab] = useState<'image' | 'video'>('image');
-    
-    const filteredAssets = assets.filter(asset => asset.type === activeTab);
+const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC, index: number, onChange: (path: any[], val: any) => void }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            const user = window.netlifyIdentity?.currentUser();
+            if (!user) throw new Error("User not authenticated.");
+            const token = await user.jwt();
+
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = error => reject(error);
+            });
+
+            const response = await fetch('/.netlify/functions/upload-blob', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: dataUrl, filename: file.name, mimeType: file.type })
+            });
+
+            if (!response.ok) throw new Error('Upload failed.');
+            const { key } = await response.json();
+            onChange(['featuredWorkDataUGC', index, 'videoSrc'], key);
+
+        } catch (error) {
+            console.error("Video upload failed:", error);
+            alert("Failed to upload video. Please try again.");
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     return (
-        <section className="site-assets-viewer">
-            <div className="read-only-notice">
-                <h4>For Your Information</h4>
-                <p>This section lists all static images and videos used in the site's design. These files are part of the core project code and <strong>cannot be edited or deleted from this panel</strong>. To change them, the files must be replaced in the project's <code>/assets</code> folder.</p>
-            </div>
-
-            <div className="asset-tabs">
-                <button onClick={() => setActiveTab('image')} className={activeTab === 'image' ? 'active' : ''}>Images ({assets.filter(a => a.type === 'image').length})</button>
-                <button onClick={() => setActiveTab('video')} className={activeTab === 'video' ? 'active' : ''}>Videos ({assets.filter(a => a.type === 'video').length})</button>
-            </div>
-            
-            <div className="asset-grid">
-                {filteredAssets.map((asset, index) => (
-                    <div key={index} className="asset-card">
-                        <div className="asset-preview">
-                            {asset.type === 'image' ? (
-                                <img src={`${asset.path}${asset.filename}`} alt={asset.filename} loading="lazy" />
-                            ) : (
-                                <video src={`${asset.path}${asset.filename}`} muted loop playsInline />
-                            )}
-                        </div>
-                        <div className="asset-info">
-                            <strong>{asset.filename}</strong>
-                            <code>{asset.path}</code>
-                            <p>{asset.usage}</p>
-                        </div>
+        <div className="admin-form">
+            <div className="form-section">
+                <label>UGC Video <Tooltip text="9:16 vertical video. Compress for web. Max 15MB is ideal." /></label>
+                {item.videoSrc && (
+                    <div className="image-preview-container">
+                        <video src={getMediaUrl(item.videoSrc)} controls loop muted className="image-preview" key={item.videoSrc}/>
                     </div>
+                )}
+                <input type="file" accept="video/*" ref={fileInputRef} onChange={handleVideoUpload} style={{ display: 'none' }} />
+                <button className="upload-button-styled" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                    {isUploading ? <><Loader className="spinner" size={16}/> Uploading...</> : <><UploadCloud size={16} /> {item.videoSrc ? 'Replace Video' : 'Upload Video'}</>}
+                </button>
+            </div>
+            <label>Username</label>
+            <input type="text" value={item.username} onChange={e => onChange(['featuredWorkDataUGC', index, 'username'], e.target.value)} />
+            <label>Description</label>
+            <textarea value={item.description} onChange={e => onChange(['featuredWorkDataUGC', index, 'description'], e.target.value)} />
+            <div className="form-row">
+                <div>
+                    <label>Likes</label>
+                    <input type="text" value={item.likes} onChange={e => onChange(['featuredWorkDataUGC', index, 'likes'], e.target.value)} />
+                </div>
+                <div>
+                    <label>Comments</label>
+                    <input type="text" value={item.comments} onChange={e => onChange(['featuredWorkDataUGC', index, 'comments'], e.target.value)} />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: number, onChange: (path: any[], val: any) => void }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setIsUploading(true);
+        try {
+            const user = window.netlifyIdentity?.currentUser();
+            if (!user) throw new Error("User not authenticated.");
+            const token = await user.jwt();
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = error => reject(error);
+            });
+            const response = await fetch('/.netlify/functions/upload-blob', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: dataUrl, filename: file.name, mimeType: file.type })
+            });
+            if (!response.ok) throw new Error('Upload failed.');
+            const { key } = await response.json();
+            onChange(['powerCardsData', index, 'videoSrc'], key);
+        } catch (error) {
+            console.error("Video upload failed:", error);
+            alert("Failed to upload video. Please try again.");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+    
+    return (
+        <div className="admin-form">
+            <div className="form-section">
+                <label>Preview Video <Tooltip text="16:9 video. Short, looping clip. Compress for web. Max 5MB is ideal." /></label>
+                {item.videoSrc && (
+                    <div className="image-preview-container">
+                        <video src={getMediaUrl(item.videoSrc)} controls loop muted className="image-preview" key={item.videoSrc}/>
+                    </div>
+                )}
+                <input type="file" accept="video/*" ref={fileInputRef} onChange={handleVideoUpload} style={{ display: 'none' }} />
+                <button className="upload-button-styled" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                    {isUploading ? <><Loader className="spinner" size={16}/> Uploading...</> : <><UploadCloud size={16} /> {item.videoSrc ? 'Replace Video' : 'Upload Video'}</>}
+                </button>
+            </div>
+            <label>Title</label>
+            <input type="text" value={item.title} onChange={e => onChange(['powerCardsData', index, 'title'], e.target.value)} />
+            <label>Description</label>
+            <textarea value={item.description} onChange={e => onChange(['powerCardsData', index, 'description'], e.target.value)} />
+        </div>
+    );
+};
+
+const TrustedByLogosEditor = ({ logos, onAdd, onDelete, onChange }: { logos: TrustedByLogo[], onAdd: () => void, onDelete: (index: number) => void, onChange: (path: any[], val: any) => void }) => {
+    const dragItem = useRef<number | null>(null);
+    const dragOverItem = useRef<number | null>(null);
+
+    const handleDragSort = () => {
+        if (dragItem.current === null || dragOverItem.current === null) return;
+        const newLogos = [...logos];
+        const draggedItemContent = newLogos.splice(dragItem.current, 1)[0];
+        newLogos.splice(dragOverItem.current, 0, draggedItemContent);
+        dragItem.current = null;
+        dragOverItem.current = null;
+        onChange(['trustedByLogos'], newLogos);
+    };
+
+    return (
+        <section>
+            <div className="section-header">
+                <h3>Trusted By Logos</h3>
+                <div className="section-header-actions">
+                    <Tooltip text="PNGs with transparent backgrounds work best. Images will be displayed at a height of 35px." />
+                    <button className="add-button" onClick={onAdd}><PlusCircle size={16}/> Add Logo</button>
+                </div>
+            </div>
+            <p className="helper-text">Manage the scrolling logos on the homepage. Drag and drop to reorder.</p>
+            <div className="logos-admin-grid">
+                {logos.map((logo, index) => (
+                    <LogoCard 
+                        key={index}
+                        logo={logo}
+                        index={index}
+                        onDelete={() => onDelete(index)}
+                        onChange={onChange}
+                        onDragStart={() => dragItem.current = index}
+                        onDragEnter={() => dragOverItem.current = index}
+                        onDragEnd={handleDragSort}
+                    />
                 ))}
             </div>
         </section>
+    );
+};
+
+const LogoCard = ({ logo, index, onDelete, onChange, ...dragProps }: { logo: TrustedByLogo, index: number, onDelete: () => void, onChange: (path: any[], val: any) => void, [key: string]: any }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // If there's an existing blob, we should ideally delete it.
+        // This is a simplified version; a more robust solution would do this.
+        
+        setIsUploading(true);
+        try {
+            const user = window.netlifyIdentity?.currentUser();
+            if (!user) throw new Error("User not authenticated.");
+            const token = await user.jwt();
+            const dataUrl = await resizeImage(file);
+            const response = await fetch('/.netlify/functions/upload-blob', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: dataUrl, filename: file.name, mimeType: file.type })
+            });
+
+            if (!response.ok) throw new Error('Upload failed.');
+            const { key } = await response.json();
+            onChange(['trustedByLogos', index, 'src'], key);
+        } catch (error) {
+            console.error("Image upload failed:", error);
+            alert("Failed to upload image.");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+    
+    return (
+        <div className="logo-admin-card" draggable {...dragProps} onDragOver={e => e.preventDefault()}>
+            <GripVertical className="drag-handle" size={20} />
+            <button className="delete-button" onClick={onDelete}><Trash2 size={16}/></button>
+            <div className="logo-preview-wrapper">
+                {logo.src ? <img src={getMediaUrl(logo.src)} alt={logo.alt} /> : <span>No Image</span>}
+            </div>
+            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
+            <button className="upload-button-styled small" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                {isUploading ? <><Loader className="spinner" size={16}/> Uploading...</> : <><UploadCloud size={16} /> {logo.src ? 'Replace' : 'Upload'}</>}
+            </button>
+            <div className="admin-form">
+                <label>Alt Text (for SEO)</label>
+                <input type="text" value={logo.alt} onChange={e => onChange(['trustedByLogos', index, 'alt'], e.target.value)} />
+                <label>Brand URL (optional)</label>
+                <input type="text" value={logo.url} onChange={e => onChange(['trustedByLogos', index, 'url'], e.target.value)} />
+            </div>
+        </div>
     );
 };

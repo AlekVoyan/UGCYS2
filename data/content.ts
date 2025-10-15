@@ -3,7 +3,7 @@
 // --- TYPE DEFINITIONS ---
 
 export interface TrustedByLogo {
-    name: string;
+    src: string;
     alt: string;
     url: string;
 }
@@ -80,13 +80,6 @@ export interface KeyStat {
     value: string;
 }
 
-export interface SiteAsset {
-    type: 'image' | 'video';
-    filename: string;
-    path: string;
-    usage: string;
-}
-
 export interface SiteContent {
     trustedByLogos: TrustedByLogo[];
     featuredWorkDataUGC: FeaturedWorkUGC[];
@@ -95,11 +88,31 @@ export interface SiteContent {
     blogPosts: BlogPost[];
     powerCardsData: PowerCardData[];
     keyStats: KeyStat[];
-    siteAssets: SiteAsset[];
     siteSingletonAssets: { [key: string]: string; };
 }
 
 // --- TEMPLATES FOR NEW ITEMS ---
+
+export const newTrustedByLogoTemplate: TrustedByLogo = {
+    src: "",
+    alt: "New Brand Logo",
+    url: "#"
+};
+
+export const newFeaturedWorkUGCTemplate: FeaturedWorkUGC = {
+    id: Date.now(),
+    username: "@new_brand",
+    description: "A catchy description for the new UGC video.",
+    likes: "0",
+    comments: "0",
+    videoSrc: ""
+};
+
+export const newPowerCardTemplate: PowerCardData = {
+    title: "New Power Card",
+    description: "A description of this production power.",
+    videoSrc: ""
+};
 
 export const newCaseStudyTemplate: CaseStudyData = {
   type: "standard",

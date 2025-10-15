@@ -9,8 +9,8 @@ interface ContactPageProps {
   siteSingletonAssets: { [key: string]: string; };
 }
 
-const getImageUrl = (src: string) => {
-    if (!src || src.startsWith('data:image') || src.startsWith('/assets/')) {
+const getMediaUrl = (src: string) => {
+    if (!src || src.startsWith('data:') || src.startsWith('/')) {
         return src;
     }
     // Assume it's a blob key
@@ -88,7 +88,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({ setActivePage, siteSin
         transition={{duration: 0.8}}
       >
         <div className="contact-visual">
-          <img src={getImageUrl(siteSingletonAssets.contactVisualImage)} alt="A creative and professional visual for the contact section" />
+          <img src={getMediaUrl(siteSingletonAssets.contactVisualImage)} alt="A creative and professional visual for the contact section" />
         </div>
         <form 
           name="contact"

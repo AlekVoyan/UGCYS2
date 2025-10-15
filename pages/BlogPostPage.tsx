@@ -11,8 +11,8 @@ interface BlogPostPageProps {
     setActivePage: (page: string) => void;
 }
 
-const getImageUrl = (src: string) => {
-    if (!src || src.startsWith('data:image') || src.startsWith('/assets/images/')) {
+const getMediaUrl = (src: string) => {
+    if (!src || src.startsWith('data:') || src.startsWith('/')) {
         return src;
     }
     // Assume it's a blob key
@@ -49,7 +49,7 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ post, onBack, setAct
                 </header>
                 
                 <div className="post-image-container">
-                    <img src={getImageUrl(post.featuredImage || `/assets/images/${post.slug}.jpg`)} alt={`Featured image for blog post titled: ${post.title}`} />
+                    <img src={getMediaUrl(post.featuredImage || `/assets/images/${post.slug}.jpg`)} alt={`Featured image for blog post titled: ${post.title}`} />
                 </div>
 
                 <div className="post-body">

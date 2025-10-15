@@ -16,8 +16,8 @@ const INITIAL_VISIBLE_CASE_STUDIES = 3;
 const INITIAL_VISIBLE_PHOTOS = 9;
 const PHOTOS_TO_LOAD_INCREMENT = 6;
 
-const getImageUrl = (src: string) => {
-    if (!src || src.startsWith('data:image') || src.startsWith('/assets/images/')) {
+const getMediaUrl = (src: string) => {
+    if (!src || src.startsWith('data:') || src.startsWith('/')) {
         return src;
     }
     // Assume it's a blob key
@@ -376,7 +376,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ setActivePage, cas
                     transition={{ duration: 0.4 }}
                 >
                     <img 
-                        src={getImageUrl(photo.src)} 
+                        src={getMediaUrl(photo.src)} 
                         alt={photo.alt}
                         loading="lazy"
                     />
@@ -420,7 +420,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ setActivePage, cas
                     exit={{ scale: 0.8, opacity: 0 }}
                 >
                     <img 
-                        src={getImageUrl(photos[lightboxImageIndex].src)} 
+                        src={getMediaUrl(photos[lightboxImageIndex].src)} 
                         alt={photos[lightboxImageIndex].alt} 
                     />
                 </motion.div>

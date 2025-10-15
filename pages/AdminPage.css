@@ -535,8 +535,10 @@
 /* --- Photo Editor --- */
 .photo-admin-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 3px;
+    grid-template-columns: repeat(3, 1fr); /* Always 3 columns */
+    gap: 5px; /* A small, consistent gap */
+    max-width: 800px; /* Constrains width on large screens */
+    margin: 0 auto; /* Center the grid container */
 }
 
 .photo-admin-item {
@@ -876,11 +878,12 @@
     display: none;
 }
 
-@media (min-width: 1200px) {
-    .photo-admin-grid {
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+@media (max-width: 992px) {
+    .admin-main-content {
+        padding: 1.5rem;
     }
 }
+
 
 @media (max-width: 768px) {
     .admin-sidebar {
@@ -944,9 +947,6 @@
         grid-template-columns: 1fr;
     }
     
-    .photo-admin-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
     .logos-admin-grid {
         grid-template-columns: 1fr;
     }

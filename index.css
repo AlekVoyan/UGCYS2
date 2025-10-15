@@ -1,0 +1,217 @@
+:root {
+  --primary-font: 'Raleway', sans-serif;
+  --secondary-font: 'Poppins', sans-serif;
+  --background-color: #000000;
+  --text-color: #BDBDBD;
+  --heading-color: #FFFFFF;
+  --accent-color: #E60023; /* A strong, saturated red */
+  --accent-color-rgb: 230, 0, 35;
+  --card-bg-color: #101010;
+  --border-color: #252525;
+  --gradient-1: linear-gradient(45deg, #E60023, #FF4D4D);
+  --gradient-glow: radial-gradient(ellipse 50% 80% at 50% 50%, rgba(230, 0, 35, 0.25) 0%, rgba(230, 0, 35, 0) 65%);
+}
+
+@keyframes button-glow-pulse {
+  0% {
+    box-shadow: 0 0 5px rgba(var(--accent-color-rgb), 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(var(--accent-color-rgb), 0.4);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(var(--accent-color-rgb), 0.2);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  font-family: var(--secondary-font);
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.7;
+  scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide default cursor */
+body, a, button, input, select, textarea {
+  cursor: none;
+}
+
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex-grow: 1;
+  padding-top: 100px; /* Header height */
+  overflow: hidden; /* Prevent animation overflows */
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--primary-font);
+  color: var(--heading-color);
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  line-height: 1.1;
+  letter-spacing: 1.5px;
+}
+
+h1 { font-size: clamp(4rem, 10vw, 8rem); }
+h2 { font-size: clamp(3rem, 8vw, 6rem); }
+h3 { font-size: clamp(1.8rem, 4vw, 2.5rem); }
+
+p {
+  margin-bottom: 1.5rem;
+  max-width: 65ch;
+}
+
+a {
+  color: var(--heading-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--accent-color);
+}
+
+.container {
+  width: 90%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8rem 0;
+}
+
+.button {
+  display: inline-block;
+  background-image: var(--gradient-1);
+  background-size: 200% auto;
+  color: var(--heading-color);
+  padding: 1rem 3rem;
+  border: 2px solid transparent;
+  font-family: var(--secondary-font);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+}
+
+.button:hover {
+  background-position: right center; /* change the direction of the change here */
+  color: var(--heading-color);
+  transform: translateY(-2px);
+  animation: button-glow-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.button.button-secondary {
+    background: transparent;
+    border: 2px solid var(--accent-color);
+    color: var(--accent-color);
+    background-image: none; /* Override gradient */
+}
+.button.button-secondary:hover {
+    background: var(--accent-color);
+    color: var(--heading-color);
+    animation: none; /* remove pulse */
+    background-image: none;
+    background-position: initial;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 5rem;
+  position: relative;
+  isolation: isolate; /* Create a new stacking context */
+}
+
+.page-header h1 {
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.page-header p {
+  max-width: 600px;
+  margin: 0 auto;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+/* For overlapping background text */
+.page-title-bg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(10rem, 25vw, 20rem);
+    color: rgba(255, 255, 255, 0.05);
+    z-index: -1;
+    font-family: var(--primary-font);
+    pointer-events: none;
+    line-height: 1;
+}
+
+/* Reusable Glass Effect */
+.glass-effect {
+    background-color: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+}
+
+/* Custom Placeholder */
+.custom-placeholder {
+  background-color: #111;
+  border: 1px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  color: #666;
+  font-size: 0.8rem;
+  font-family: monospace;
+  line-height: 1.4;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.custom-placeholder span {
+  display: block;
+  font-weight: 600;
+  color: #888;
+}
+
+.custom-placeholder span:not(:last-child) {
+  margin-bottom: 0.5rem;
+}
+
+/* Custom Cursor */
+.custom-cursor {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  will-change: transform;
+}

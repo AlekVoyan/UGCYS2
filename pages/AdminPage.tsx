@@ -1,0 +1,891 @@
+import React, { useState, useRef, useEffect } from 'react';
+import './AdminPage.css';
+import { SiteContent, CaseStudyData, BlogPost, PhotoData, SiteAsset, newCaseStudyTemplate, newBlogPostTemplate, CarouselItem, newCarouselItemTemplate } from '../data/content';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, LayoutGrid, FileText, Image as ImageIcon, Trash2, PlusCircle, GripVertical, UploadCloud, Search, Archive, ChevronLeft, Menu, Loader, Palette } from 'lucide-react';
+
+interface AdminPageProps {
+  content: SiteContent;
+  updateContent: (newContent: SiteContent) => void;
+  onLogout: () => void;
+}
+
+const getImageUrl = (src: string) => {
+    if (!src || src.startsWith('data:image') || src.startsWith('/assets/')) {
+        return src;
+    }
+    // Assume it's a blob key
+    return `/.netlify/functions/get-blob?key=${src}`;
+};
+
+// Deep cloning and path-based updates to avoid state mutation issues
+const get = (obj: any, path: (string | number)[]) => path.reduce((acc, part) => acc && acc[part], obj);
+const set = (obj: any, path: (string | number)[], value: any) => {
+    const newObj = JSON.parse(JSON.stringify(obj));
+    let current = newObj;
+    for (let i = 0; i < path.length - 1; i++) {
+        current = current[path[i]];
+    }
+    current[path[path.length - 1]] = value;
+    return newObj;
+};
+
+const resizeImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            if (!event.target?.result) return reject(new Error("Could not read file."));
+            const img = new Image();
+            img.src = event.target.result as string;
+            img.onload = () => {
+                const MAX_WIDTH = 1280;
+                const MAX_HEIGHT = 1280;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    return reject(new Error('Could not get canvas context'));
+                }
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8); 
+                resolve(dataUrl);
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
+};
+
+
+export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, onLogout }) => {
+  const [activeSection, setActiveSection] = useState('portfolio-case-studies');
+  const [editableContent, setEditableContent] = useState<SiteContent>(() => JSON.parse(JSON.stringify(content)));
+  const [openAccordion, setOpenAccordion] = useState<string | null>('cs-0');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+  const [searchTerms, setSearchTerms] = useState({
+    'portfolio-case-studies': '',
+    'blog': '',
+  });
+  const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
+  const [uploadingSingletonAssets, setUploadingSingletonAssets] = useState<{ [key: string]: boolean }>({});
+
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isMobileMenuOpen]);
+
+
+  const handleSave = async () => {
+    setSaveStatus('saving');
+    try {
+      const user = window.netlifyIdentity?.currentUser();
+      if (!user) {
+        throw new Error('Not logged in. Please refresh and try again.');
+      }
+      const token = await user.jwt();
+
+      const response = await fetch('/.netlify/functions/saveContent', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(editableContent, null, 2)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Error ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || JSON.stringify(errorData);
+        } catch (e) {
+          // Response was not JSON, use plain text
+          const textError = await response.text();
+          if (textError) {
+            errorMessage = textError;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+      
+      updateContent(editableContent);
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+
+    } catch (error) {
+      console.error('Save failed:', error);
+      setSaveStatus('error');
+      alert(`Error: ${(error as Error).message}`);
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  };
+  
+  const getSaveButtonText = () => {
+    switch (saveStatus) {
+      case 'saving': return 'Saving...';
+      case 'success': return 'Success!';
+      case 'error': return 'Error! Retry?';
+      default: return 'Save All Changes';
+    }
+  };
+  
+  const getSaveButtonClass = () => {
+    let base = "button";
+    if (saveStatus === 'success') base += ' success';
+    if (saveStatus === 'error') base += ' error';
+    return base;
+  };
+
+
+  const handleSearchChange = (section: keyof typeof searchTerms, value: string) => {
+      setSearchTerms(prev => ({ ...prev, [section]: value }));
+  };
+
+  const handleFieldChange = (path: (string | number)[], value: any) => {
+    setEditableContent(set(editableContent, path, value));
+  };
+
+  const toggleAccordion = (id: string) => {
+    setOpenAccordion(openAccordion === id ? null : id);
+  };
+
+  // --- ADD/DELETE Functionality ---
+  const addItem = (type: 'caseStudiesData' | 'blogPosts') => {
+    const template = type === 'caseStudiesData' ? newCaseStudyTemplate : newBlogPostTemplate;
+    const currentArray = editableContent[type];
+    const newArray = [JSON.parse(JSON.stringify(template)), ...currentArray];
+    setEditableContent({ ...editableContent, [type]: newArray });
+    setOpenAccordion(`${type.replace('Data', '').replace('s', '')}-0`);
+  };
+
+  const deleteItem = async (type: 'caseStudiesData' | 'blogPosts' | 'photosData', index: number) => {
+    if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+        return;
+    }
+
+    if (type === 'photosData') {
+        const photoToDelete = editableContent.photosData[index];
+        const isBlob = !photoToDelete.src.startsWith('data:image');
+        if (isBlob) {
+            // It's a blob key, so we need to delete it from the store
+            try {
+                const user = window.netlifyIdentity?.currentUser();
+                if (!user) throw new Error("User not authenticated.");
+                const token = await user.jwt();
+                
+                const response = await fetch('/.netlify/functions/delete-blob', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ key: photoToDelete.src })
+                });
+                if (!response.ok) throw new Error("Failed to delete from blob storage.");
+            } catch (error) {
+                console.error("Failed to delete blob:", error);
+                alert("Could not delete image from storage. Please try again.");
+                return;
+            }
+        }
+    }
+    
+    const currentArray = (editableContent as any)[type];
+    const newArray = currentArray.filter((_: any, i: number) => i !== index);
+    setEditableContent({ ...editableContent, [type]: newArray });
+  };
+
+
+  // --- Photo Management ---
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+  
+    const allFiles: File[] = Array.from(files);
+    setUploadingFiles(allFiles.map(f => f.name));
+  
+    const user = window.netlifyIdentity?.currentUser();
+    if (!user) {
+      alert("Authentication error. Please log out and log back in.");
+      setUploadingFiles([]);
+      return;
+    }
+    const token = await user.jwt();
+  
+    const uploadPromises = allFiles.map(file => {
+      return (async () => {
+        try {
+          const dataUrl = await resizeImage(file);
+          const response = await fetch('/.netlify/functions/upload-blob', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              image: dataUrl,
+              filename: file.name,
+              mimeType: file.type,
+            }),
+          });
+  
+          if (!response.ok) {
+            throw new Error(`Upload failed for ${file.name}`);
+          }
+  
+          const { key } = await response.json();
+          return { src: key, alt: file.name, name: file.name };
+        } catch (error) {
+          console.error(error);
+          return null;
+        }
+      })();
+    });
+  
+    const results = await Promise.all(uploadPromises);
+    const newPhotos = results.filter((p): p is PhotoData => p !== null);
+  
+    if (newPhotos.length > 0) {
+      setEditableContent(prev => ({
+        ...prev,
+        photosData: [...newPhotos, ...prev.photosData],
+      }));
+    }
+    setUploadingFiles([]);
+  };
+
+  const handleDragSort = () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    const newPhotos = [...editableContent.photosData];
+    const draggedItemContent = newPhotos.splice(dragItem.current, 1)[0];
+    newPhotos.splice(dragOverItem.current, 0, draggedItemContent);
+    dragItem.current = null;
+    dragOverItem.current = null;
+    setEditableContent({ ...editableContent, photosData: newPhotos });
+  };
+
+
+  const renderSection = () => {
+    switch (activeSection) {
+        case 'portfolio-case-studies':
+            return <ListEditor
+                title="Portfolio Case Studies"
+                items={editableContent.caseStudiesData}
+                onAdd={() => addItem('caseStudiesData')}
+                onDelete={(index) => deleteItem('caseStudiesData', index)}
+                openAccordion={openAccordion}
+                toggleAccordion={toggleAccordion}
+                renderForm={(item, index) => <CaseStudyForm item={item} index={index} onChange={handleFieldChange} />}
+                prefix="cs"
+                searchTerm={searchTerms['portfolio-case-studies']}
+                onSearchChange={(value) => handleSearchChange('portfolio-case-studies', value)}
+            />;
+        case 'portfolio-photos':
+            return <PhotoEditor
+                photos={editableContent.photosData}
+                onUploadClick={() => fileInputRef.current?.click()}
+                onDelete={(index) => deleteItem('photosData', index)}
+                dragItem={dragItem}
+                dragOverItem={dragOverItem}
+                onDragSort={handleDragSort}
+                uploadingFiles={uploadingFiles}
+            />;
+        case 'blog':
+            return <ListEditor
+                title="Blog Posts"
+                items={editableContent.blogPosts}
+                onAdd={() => addItem('blogPosts')}
+                onDelete={(index) => deleteItem('blogPosts', index)}
+                openAccordion={openAccordion}
+                toggleAccordion={toggleAccordion}
+                renderForm={(item, index) => <BlogPostForm item={item} index={index} onChange={handleFieldChange} />}
+                prefix="blog"
+                searchTerm={searchTerms['blog']}
+                onSearchChange={(value) => handleSearchChange('blog', value)}
+            />;
+        case 'page-visuals':
+            return <PageVisualsEditor 
+                assets={editableContent.siteSingletonAssets}
+                onChange={handleFieldChange}
+                uploadingStates={uploadingSingletonAssets}
+                setUploadingState={(key, isUploading) => setUploadingSingletonAssets(prev => ({...prev, [key]: isUploading}))}
+            />;
+        case 'site-assets':
+            return <SiteAssetsViewer assets={editableContent.siteAssets} />;
+        default:
+            return <p>Select a section to edit.</p>;
+    }
+  };
+
+  return (
+    <div className={`admin-page ${isSidebarMinimized ? 'sidebar-minimized' : ''} ${isMobileMenuOpen ? 'mobile-menu-open' : ''}`}>
+        <AnimatePresence>
+            {isMobileMenuOpen && (
+                <motion.div 
+                    className="mobile-sidebar-overlay"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                />
+            )}
+        </AnimatePresence>
+        <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handlePhotoUpload} style={{ display: 'none' }} />
+        <nav className="admin-sidebar">
+            <div className="admin-sidebar-header">
+                <h2><span>Admin Panel</span></h2>
+            </div>
+            <ul>
+                <li className="nav-category">Portfolio</li>
+                <li><button onClick={() => {setActiveSection('portfolio-case-studies'); setIsMobileMenuOpen(false);}} className={activeSection === 'portfolio-case-studies' ? 'active' : ''}><LayoutGrid size={18} /> <span>Case Studies</span></button></li>
+                <li><button onClick={() => {setActiveSection('portfolio-photos'); setIsMobileMenuOpen(false);}} className={activeSection === 'portfolio-photos' ? 'active' : ''}><ImageIcon size={18} /> <span>Photos</span></button></li>
+                <li className="nav-category">Content</li>
+                <li><button onClick={() => {setActiveSection('blog'); setIsMobileMenuOpen(false);}} className={activeSection === 'blog' ? 'active' : ''}><FileText size={18} /> <span>Blog Posts</span></button></li>
+                <li className="nav-category">Site Design</li>
+                <li><button onClick={() => {setActiveSection('page-visuals'); setIsMobileMenuOpen(false);}} className={activeSection === 'page-visuals' ? 'active' : ''}><Palette size={18} /> <span>Page Visuals</span></button></li>
+                <li className="nav-category">Site Assets</li>
+                <li><button onClick={() => {setActiveSection('site-assets'); setIsMobileMenuOpen(false);}} className={activeSection === 'site-assets' ? 'active' : ''}><Archive size={18} /> <span>All Media Files</span></button></li>
+            </ul>
+            <div className="admin-sidebar-footer">
+                <button onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}>
+                    <ChevronLeft />
+                    <span>Collapse Menu</span>
+                </button>
+            </div>
+        </nav>
+        <main className="admin-main-content">
+            <header className="admin-main-header">
+                <button className="mobile-menu-toggle" onClick={() => setIsMobileMenuOpen(true)} aria-label="Open menu">
+                    <Menu size={24} />
+                </button>
+                <h1>{activeSection.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h1>
+                <div className="admin-header-actions">
+                    <button onClick={onLogout} className="button button-secondary">Logout</button>
+                    <button onClick={handleSave} className={getSaveButtonClass()} disabled={saveStatus === 'saving'}>
+                        {getSaveButtonText()}
+                    </button>
+                </div>
+            </header>
+            <div className="admin-content-area">
+                {renderSection()}
+            </div>
+        </main>
+    </div>
+  );
+};
+
+
+// --- Sub-components for better organization ---
+
+interface ListEditorProps {
+    title: string;
+    items: any[];
+    onAdd: () => void;
+    onDelete: (index: number) => void;
+    openAccordion: string | null;
+    toggleAccordion: (id: string) => void;
+    renderForm: (item: any, index: number) => React.ReactNode;
+    prefix: string;
+    searchTerm: string;
+    onSearchChange: (value: string) => void;
+}
+
+const ListEditor: React.FC<ListEditorProps> = ({ title, items, onAdd, onDelete, openAccordion, toggleAccordion, renderForm, prefix, searchTerm, onSearchChange }) => {
+    const filteredItems = items
+        .map((item, index) => ({ item, originalIndex: index }))
+        .filter(({ item }) =>
+            (item.title || item.brand || '').toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+    return (
+        <section>
+            <div className="section-header">
+                <h3>{title}</h3>
+                <div className="section-header-actions">
+                    <div className="search-bar">
+                        <Search className="search-icon" size={18}/>
+                        <input 
+                            type="text" 
+                            placeholder="Search by title..."
+                            value={searchTerm}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                        />
+                    </div>
+                    <button className="add-button" onClick={onAdd}><PlusCircle size={16}/> Add New</button>
+                </div>
+            </div>
+            {filteredItems.length > 0 ? (
+                <div className="accordion-list">
+                    {filteredItems.map(({ item, originalIndex }) => (
+                        <div key={originalIndex} className="accordion-item">
+                            <div className="accordion-header" onClick={() => toggleAccordion(`${prefix}-${originalIndex}`)}>
+                                <span>{item.title || 'Untitled'}</span>
+                                <div className="accordion-actions">
+                                    <button className="delete-button" onClick={(e) => { e.stopPropagation(); onDelete(originalIndex); }}><Trash2 size={16}/></button>
+                                    <ChevronDown className={`accordion-chevron ${openAccordion === `${prefix}-${originalIndex}` ? 'open' : ''}`} />
+                                </div>
+                            </div>
+                            <AnimatePresence>
+                            {openAccordion === `${prefix}-${originalIndex}` && (
+                                <motion.div
+                                    className="accordion-content"
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1, transition: { duration: 0.3 } }}
+                                    exit={{ height: 0, opacity: 0, transition: { duration: 0.2 } }}
+                                >
+                                {renderForm(item, originalIndex)}
+                                </motion.div>
+                            )}
+                            </AnimatePresence>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="no-results">
+                    <p>No items found{searchTerm && ` matching "${searchTerm}"`}.</p>
+                </div>
+            )}
+        </section>
+    );
+};
+
+const CaseStudyForm = ({ item, index, onChange }: { item: CaseStudyData, index: number, onChange: (path: any[], val: any) => void }) => {
+    
+    // State for managing which carousel item accordion is open
+    const [openCarouselItem, setOpenCarouselItem] = useState<number | null>(0);
+
+    // Refs for drag and drop
+    const dragItem = useRef<number | null>(null);
+    const dragOverItem = useRef<number | null>(null);
+
+    const handleCarouselDragSort = () => {
+        if (dragItem.current === null || dragOverItem.current === null) return;
+        const newItems = [...(item.items || [])];
+        const draggedItemContent = newItems.splice(dragItem.current, 1)[0];
+        newItems.splice(dragOverItem.current, 0, draggedItemContent);
+        dragItem.current = null;
+        dragOverItem.current = null;
+        onChange(['caseStudiesData', index, 'items'], newItems);
+    };
+
+    const handleDeleteCarouselItem = (itemIndex: number) => {
+        if (confirm('Are you sure you want to delete this story?')) {
+            const newItems = [...(item.items || [])];
+            newItems.splice(itemIndex, 1);
+            onChange(['caseStudiesData', index, 'items'], newItems);
+        }
+    };
+
+    const handleAddCarouselItem = () => {
+        const newItems = [...(item.items || []), newCarouselItemTemplate];
+        onChange(['caseStudiesData', index, 'items'], newItems);
+        // Open the newly added item
+        setOpenCarouselItem(newItems.length - 1);
+    };
+
+    if (item.type === 'phone-carousel') {
+        return (
+            <div className="admin-form">
+                <label>Title</label>
+                <input type="text" value={item.title} onChange={e => onChange(['caseStudiesData', index, 'title'], e.target.value)} />
+                <div className="carousel-item-editor">
+                    <h4>Brand Stories</h4>
+                    {item.items && item.items.map((cItem, cIndex) => (
+                        <div 
+                            key={cIndex}
+                            className="carousel-item-card"
+                            draggable
+                            onDragStart={() => dragItem.current = cIndex}
+                            onDragEnter={() => dragOverItem.current = cIndex}
+                            onDragEnd={handleCarouselDragSort}
+                            onDragOver={e => e.preventDefault()}
+                        >
+                            <div className="carousel-item-header" onClick={() => setOpenCarouselItem(openCarouselItem === cIndex ? null : cIndex)}>
+                                <GripVertical className="drag-handle" size={20} />
+                                <span className="carousel-item-title">{cItem.brand || 'New Story'}</span>
+                                <div className="carousel-item-actions">
+                                    <button className="delete-button" onClick={(e) => { e.stopPropagation(); handleDeleteCarouselItem(cIndex); }}><Trash2 size={16} /></button>
+                                    <ChevronDown className={`accordion-chevron ${openCarouselItem === cIndex ? 'open' : ''}`} />
+                                </div>
+                            </div>
+                            <AnimatePresence>
+                                {openCarouselItem === cIndex && (
+                                    <motion.div
+                                        className="carousel-item-content"
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                    >
+                                        <label>Brand</label>
+                                        <input type="text" value={cItem.brand} onChange={e => onChange(['caseStudiesData', index, 'items', cIndex, 'brand'], e.target.value)} />
+                                        <label>Goal</label>
+                                        <textarea value={cItem.goal} onChange={e => onChange(['caseStudiesData', index, 'items', cIndex, 'goal'], e.target.value)} />
+                                        <label>Embed URL</label>
+                                        <input type="text" value={cItem.embedUrl} onChange={e => onChange(['caseStudiesData', index, 'items', cIndex, 'embedUrl'], e.target.value)} />
+                                        {cItem.results.map((res, rIndex) => (
+                                            <div key={rIndex} className="form-row">
+                                                <div>
+                                                    <label>Result Value</label>
+                                                    <input type="text" value={res.value} onChange={e => onChange(['caseStudiesData', index, 'items', cIndex, 'results', rIndex, 'value'], e.target.value)} />
+                                                </div>
+                                                <div>
+                                                    <label>Result Label</label>
+                                                    <input type="text" value={res.label} onChange={e => onChange(['caseStudiesData', index, 'items', cIndex, 'results', rIndex, 'label'], e.target.value)} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    ))}
+                    <button className="add-button" onClick={handleAddCarouselItem}><PlusCircle size={16} /> Add Story</button>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="admin-form">
+            <label>Title</label>
+            <input type="text" value={item.title} onChange={e => onChange(['caseStudiesData', index, 'title'], e.target.value)} />
+            <label>Type</label>
+            <select value={item.type} onChange={e => onChange(['caseStudiesData', index, 'type'], e.target.value)}>
+                <option value="standard">Standard (16:9)</option>
+                <option value="phone">Phone (9:16)</option>
+                <option value="phone-carousel">Phone Carousel</option>
+            </select>
+            <label>Brand</label>
+            <input type="text" value={item.brand || ''} onChange={e => onChange(['caseStudiesData', index, 'brand'], e.target.value)} />
+            <label>Goal</label>
+            <textarea value={item.goal || ''} onChange={e => onChange(['caseStudiesData', index, 'goal'], e.target.value)} />
+            <label>Embed URL</label>
+            <input type="text" value={item.embedUrl || ''} onChange={e => onChange(['caseStudiesData', index, 'embedUrl'], e.target.value)} />
+            {item.results && item.results.map((result, rIndex) => (
+                <div key={rIndex} className="form-row">
+                    <div>
+                        <label>Result Value</label>
+                        <input type="text" value={result.value} onChange={e => onChange(['caseStudiesData', index, 'results', rIndex, 'value'], e.target.value)} />
+                    </div>
+                    <div>
+                        <label>Result Label</label>
+                        <input type="text" value={result.label} onChange={e => onChange(['caseStudiesData', index, 'results', rIndex, 'label'], e.target.value)} />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const BlogPostForm = ({ item, index, onChange }: { item: BlogPost, index: number, onChange: (path: any[], val: any) => void }) => {
+    const blogPostFileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            const user = window.netlifyIdentity?.currentUser();
+            if (!user) throw new Error("User not authenticated.");
+            const token = await user.jwt();
+
+            const dataUrl = await resizeImage(file);
+            const response = await fetch('/.netlify/functions/upload-blob', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: dataUrl, filename: file.name, mimeType: file.type })
+            });
+
+            if (!response.ok) throw new Error('Upload failed.');
+            const { key } = await response.json();
+            onChange(['blogPosts', index, 'featuredImage'], key);
+
+        } catch (error) {
+            console.error("Image processing failed:", error);
+            alert("Failed to process image. Please try a different file.");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleRemoveImage = async () => {
+        const key = item.featuredImage;
+        if (!key || key.startsWith('data:image')) {
+            onChange(['blogPosts', index, 'featuredImage'], '');
+            return;
+        }
+
+        if (!confirm("Are you sure you want to remove this image? This will delete it from storage.")) {
+            return;
+        }
+
+        try {
+            const user = window.netlifyIdentity?.currentUser();
+            if (!user) throw new Error("User not authenticated.");
+            const token = await user.jwt();
+
+            const response = await fetch('/.netlify/functions/delete-blob', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ key })
+            });
+            if (!response.ok) throw new Error("Failed to delete from blob storage.");
+
+            onChange(['blogPosts', index, 'featuredImage'], '');
+        } catch (error) {
+            console.error("Failed to delete blob:", error);
+            alert("Could not delete image from storage. Please try again.");
+        }
+    };
+
+    return (
+        <div className="admin-form">
+            <div className="form-section">
+                <label>Featured Image</label>
+                {item.featuredImage ? (
+                    <div className="image-preview-container">
+                        <img src={getImageUrl(item.featuredImage)} alt="Featured" className="image-preview" />
+                        <button onClick={handleRemoveImage} className="remove-image-button">Remove Image</button>
+                    </div>
+                ) : (
+                    <>
+                        <input type="file" accept="image/*" ref={blogPostFileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
+                        <button className="upload-button-styled" onClick={() => blogPostFileInputRef.current?.click()} disabled={isUploading}>
+                            {isUploading ? <><Loader className="spinner" size={16}/> Uploading...</> : <><UploadCloud size={16} /> Upload Image</>}
+                        </button>
+                    </>
+                )}
+            </div>
+            <label>Slug</label>
+            <input type="text" value={item.slug} onChange={e => onChange(['blogPosts', index, 'slug'], e.target.value)} />
+            <label>Title</label>
+            <input type="text" value={item.title} onChange={e => onChange(['blogPosts', index, 'title'], e.target.value)} />
+            <label>Category</label>
+            <input type="text" value={item.category} onChange={e => onChange(['blogPosts', index, 'category'], e.target.value)} />
+            <label>Excerpt</label>
+            <textarea value={item.excerpt} onChange={e => onChange(['blogPosts', index, 'excerpt'], e.target.value)} />
+            <label>Full Content (use a blank line for new paragraphs)</label>
+            <textarea className="tall" value={item.fullContent} onChange={e => onChange(['blogPosts', index, 'fullContent'], e.target.value)} />
+        </div>
+    );
+};
+
+
+const PhotoEditor = ({ photos, onUploadClick, onDelete, dragItem, dragOverItem, onDragSort, uploadingFiles }: any) => (
+    <section>
+        <div className="section-header">
+            <h3>Photo Gallery</h3>
+            <button className="upload-button" onClick={onUploadClick} disabled={uploadingFiles.length > 0}>
+                {uploadingFiles.length > 0 ? <><Loader className="spinner" size={16}/> Uploading...</> : <><UploadCloud size={16}/> Upload Photos</>}
+            </button>
+        </div>
+        <p className="helper-text">Drag and drop photos to reorder them for the portfolio page.</p>
+        <div className="photo-admin-grid">
+            {uploadingFiles.map((name: string) => (
+                <div key={name} className="photo-admin-item-loading">
+                    <Loader className="spinner" />
+                    <span>{name}</span>
+                </div>
+            ))}
+            {photos.map((photo: PhotoData, index: number) => (
+                <div
+                    key={index}
+                    className="photo-admin-item"
+                    draggable
+                    onDragStart={() => (dragItem.current = index)}
+                    onDragEnter={() => (dragOverItem.current = index)}
+                    onDragEnd={onDragSort}
+                    onDragOver={(e) => e.preventDefault()}
+                >
+                    <img src={getImageUrl(photo.src)} alt={photo.alt} />
+                    <div className="photo-admin-overlay">
+                        <GripVertical className="drag-handle" size={20} />
+                        <button className="delete-button" onClick={() => onDelete(index)}><Trash2 size={16}/></button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </section>
+);
+
+const assetLabels: { [key: string]: { label: string; type: 'image' | 'video' } } = {
+  heroBackgroundVideo: { label: 'Homepage Hero Background', type: 'video' },
+  homeIntroImage: { label: 'Homepage Intro Section Image', type: 'image' },
+  aboutHeroImage: { label: 'About Page Hero Image', type: 'image' },
+  aboutAcademicImage: { label: 'About Page "Academic Edge" Image', type: 'image' },
+  contactVisualImage: { label: 'Contact Page Visual', type: 'image' },
+};
+
+const processFileForUpload = (file: File, assetType: 'image' | 'video'): Promise<string> => {
+    if (assetType === 'image') {
+        if (file.type.startsWith('image/') && file.type !== 'image/gif') {
+            return resizeImage(file);
+        }
+    }
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+    });
+};
+
+const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingState }: any) => {
+    const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, key: string, type: 'image' | 'video') => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingState(key, true);
+        try {
+            const user = window.netlifyIdentity?.currentUser();
+            if (!user) throw new Error("User not authenticated.");
+            const token = await user.jwt();
+
+            const dataUrl = await processFileForUpload(file, type);
+            
+            const response = await fetch('/.netlify/functions/upload-blob', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: dataUrl, filename: file.name, mimeType: file.type })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Upload failed.');
+            }
+
+            const { key: newKey } = await response.json();
+            onChange(['siteSingletonAssets', key], newKey);
+
+        } catch (error) {
+            console.error(`Upload failed for ${key}:`, error);
+            alert(`Upload failed: ${(error as Error).message}`);
+        } finally {
+            setUploadingState(key, false);
+        }
+    };
+
+    return (
+        <section>
+            <div className="section-header">
+                <h3>Site-Wide Page Visuals</h3>
+            </div>
+            <p className="helper-text">Manage the main images and videos that appear on key pages of your site. Uploading a new file will automatically replace the old one.</p>
+            <div className="visuals-grid">
+                {Object.keys(assetLabels).map(key => {
+                    const { label, type } = assetLabels[key];
+                    const src = assets[key];
+                    const isUploading = uploadingStates[key];
+
+                    return (
+                        <div key={key} className="visual-card">
+                            <h4>{label}</h4>
+                            <div className="visual-preview">
+                                {isUploading ? (
+                                    <div className="visual-loading-overlay">
+                                        <Loader className="spinner" />
+                                        <span>Uploading...</span>
+                                    </div>
+                                ) : (
+                                    type === 'image' ?
+                                        <img src={getImageUrl(src)} alt={label} key={src} /> :
+                                        <video src={getImageUrl(src)} muted autoPlay loop playsInline key={src}/>
+                                )}
+                            </div>
+                            <input
+                                type="file"
+                                accept={type === 'image' ? 'image/*' : 'video/*'}
+                                style={{ display: 'none' }}
+                                // FIX: The ref callback function should not return a value. Wrapped the assignment in braces to ensure it returns void.
+                                ref={(el) => { fileInputRefs.current[key] = el; }}
+                                onChange={(e) => handleFileChange(e, key, type)}
+                            />
+                            <button 
+                                className="upload-button-styled small"
+                                onClick={() => fileInputRefs.current[key]?.click()}
+                                disabled={isUploading}
+                            >
+                                <UploadCloud size={16} /> {isUploading ? 'Processing...' : 'Upload New'}
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+        </section>
+    );
+};
+
+const SiteAssetsViewer = ({ assets }: { assets: SiteAsset[] }) => {
+    const [activeTab, setActiveTab] = useState<'image' | 'video'>('image');
+    
+    const filteredAssets = assets.filter(asset => asset.type === activeTab);
+
+    return (
+        <section className="site-assets-viewer">
+            <div className="read-only-notice">
+                <h4>For Your Information</h4>
+                <p>This section lists all static images and videos used in the site's design. These files are part of the core project code and <strong>cannot be edited or deleted from this panel</strong>. To change them, the files must be replaced in the project's <code>/assets</code> folder.</p>
+            </div>
+
+            <div className="asset-tabs">
+                <button onClick={() => setActiveTab('image')} className={activeTab === 'image' ? 'active' : ''}>Images ({assets.filter(a => a.type === 'image').length})</button>
+                <button onClick={() => setActiveTab('video')} className={activeTab === 'video' ? 'active' : ''}>Videos ({assets.filter(a => a.type === 'video').length})</button>
+            </div>
+            
+            <div className="asset-grid">
+                {filteredAssets.map((asset, index) => (
+                    <div key={index} className="asset-card">
+                        <div className="asset-preview">
+                            {asset.type === 'image' ? (
+                                <img src={`${asset.path}${asset.filename}`} alt={asset.filename} loading="lazy" />
+                            ) : (
+                                <video src={`${asset.path}${asset.filename}`} muted loop playsInline />
+                            )}
+                        </div>
+                        <div className="asset-info">
+                            <strong>{asset.filename}</strong>
+                            <code>{asset.path}</code>
+                            <p>{asset.usage}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </section>
+    );
+};

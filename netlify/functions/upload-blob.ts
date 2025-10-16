@@ -1,5 +1,5 @@
 import type { Handler, HandlerContext } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
+import { getUploadsStore } from "./utils/blobStore";
 import { v4 as uuidv4 } from 'uuid';
 
 const jsonResponse = (status: number, body: object) => {
@@ -31,7 +31,7 @@ const handler: Handler = async (event, context: HandlerContext) => {
         }
         
         const key = uuidv4();
-        const store = getStore("uploads");
+        const store = getUploadsStore();
         
         // Generate a URL that allows the client to PUT a file for 1 hour
         const signedUrl = await store.getSignedURL(key, { 

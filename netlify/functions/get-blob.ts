@@ -1,5 +1,5 @@
 import type { Handler } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
+import { getUploadsStore } from "./utils/blobStore";
 
 const handler: Handler = async (event) => {
   const key = event.queryStringParameters?.key;
@@ -9,7 +9,7 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    const store = getStore("uploads");
+    const store = getUploadsStore();
     const result = await store.getWithMetadata(key, { type: "arrayBuffer" });
 
     if (!result || !result.data) {

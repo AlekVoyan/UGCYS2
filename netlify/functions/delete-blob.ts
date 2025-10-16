@@ -1,5 +1,5 @@
 import type { Handler, HandlerContext } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
+import { getUploadsStore } from "./utils/blobStore";
 
 const jsonResponse = (status: number, body: object) => {
     return new Response(JSON.stringify(body), {
@@ -29,7 +29,7 @@ const handler: Handler = async (event, context: HandlerContext) => {
             return jsonResponse(400, { message: 'Blob key not provided' });
         }
         
-        const store = getStore("uploads");
+        const store = getUploadsStore();
         await store.delete(key);
         
         return jsonResponse(200, { message: "Blob deleted successfully." });

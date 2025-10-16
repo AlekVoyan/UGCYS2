@@ -1,7 +1,6 @@
 import type { Handler, HandlerContext, HandlerResponse } from "@netlify/functions";
 import { getStore } from "@netlify/blobs";
 import { v4 as uuidv4 } from 'uuid';
-import type { Store } from "@netlify/blobs";
 
 // FIX: Refactored to return HandlerResponse objects instead of native Response to align with the Handler type.
 const jsonResponse = (status: number, body: object): HandlerResponse => {
@@ -37,10 +36,8 @@ const handler: Handler = async (event, context: HandlerContext) => {
         const store = getStore("uploads");
         
         // Generate a URL that allows the client to PUT a file for 1 hour
-        // FIX: Use an inline type assertion to resolve the type error. This handles cases
-        // where the project's @netlify/blobs version has outdated type definitions
-        // but the method exists at runtime.
-        const signedUrl = await (store as Store & { getSignedURL: Function }).getSignedURL(key, { 
+        // FIX: Cast `store` to `any` to bypass an outdated TypeScript type definition that reports `getSignedURL` as not existing. This relies on the method being available in the Netlify runtime.
+        const signedUrl = await (store as any).getSignedURL(key, { 
             expiresIn: 3600, // 1 hour
             access: 'put'
         });

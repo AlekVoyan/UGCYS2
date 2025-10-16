@@ -1,38 +1,50 @@
-import type { Handler } from "@netlify/functions";
+// FIX: Refactored to return HandlerResponse objects instead of native Response to align with the Handler type.
+import type { Handler, HandlerEvent } from "@netlify/functions";
 import { getUploadsStore } from "./utils/blobStore";
+import { Buffer } from "buffer";
 
-const handler: Handler = async (event) => {
+const handler: Handler = async (event: HandlerEvent) => {
   const key = event.queryStringParameters?.key;
 
   if (!key) {
-    return new Response("Missing 'key' query parameter.", { status: 400 });
+    return {
+      statusCode: 400,
+      body: "Missing 'key' query parameter.",
+    };
   }
 
   try {
     const store = getUploadsStore();
     const result = await store.getWithMetadata(key, { type: "arrayBuffer" });
 
-    if (!result || !result.data) {
-        return new Response(`Blob with key "${key}" not found.`, { status: 404 });
+    if (result === null) {
+      return {
+        statusCode: 404,
+        body: `Blob with key "${key}" not found.`,
+      };
     }
 
     const { data, metadata } = result;
 
     const headers = {
-        // FIX: Cast metadata.mimeType to string to satisfy HeadersInit type.
         'Content-Type': (metadata?.mimeType as string) || 'application/octet-stream',
         'Content-Length': data.byteLength.toString(),
         'Cache-Control': 'public, max-age=31536000, immutable' // Cache for 1 year
     };
 
-    return new Response(data, {
-        status: 200,
+    return {
+        statusCode: 200,
         headers,
-    });
+        body: Buffer.from(data).toString('base64'),
+        isBase64Encoded: true,
+    };
 
   } catch (error) {
     console.error(`Error fetching blob with key ${key}:`, error);
-    return new Response("Internal Server Error", { status: 500 });
+    return {
+        statusCode: 500,
+        body: "Internal Server Error",
+    };
   }
 };
 

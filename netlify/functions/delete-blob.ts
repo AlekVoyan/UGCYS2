@@ -1,11 +1,13 @@
-import type { Handler, HandlerContext } from "@netlify/functions";
+import type { Handler, HandlerContext, HandlerResponse } from "@netlify/functions";
 import { getUploadsStore } from "./utils/blobStore";
 
-const jsonResponse = (status: number, body: object) => {
-    return new Response(JSON.stringify(body), {
-        status,
+// FIX: Refactored to return HandlerResponse objects instead of native Response to align with the Handler type.
+const jsonResponse = (status: number, body: object): HandlerResponse => {
+    return {
+        statusCode: status,
+        body: JSON.stringify(body),
         headers: { 'Content-Type': 'application/json' },
-    });
+    };
 };
 
 const handler: Handler = async (event, context: HandlerContext) => {

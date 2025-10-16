@@ -6,16 +6,17 @@ import type { Store } from "@netlify/blobs";
  * It explicitly checks for the Netlify production environment versus a local environment.
  */
 export const getUploadsStore = (): Store => {
-  // The 'NETLIFY' environment variable is set to 'true' in Netlify's build and function environments.
-  // This is the most reliable way to detect if the code is running on Netlify.
-  if (process.env.NETLIFY === 'true') {
+  const context = process.env.CONTEXT;
+
+  // Check if running in a deployed Netlify environment (production, deploy previews, or branch deploys)
+  if (context === 'production' || context === 'deploy-preview' || context === 'branch-deploy') {
     // In the deployed Netlify environment, call getStore without parameters.
     // Netlify automatically injects the siteID and a scoped token.
     return getStore("uploads");
   }
 
   // --- LOCAL DEVELOPMENT ---
-  // If not in a Netlify environment, we assume local development.
+  // If the context is anything else (like 'dev' or undefined), assume local development.
   const { NETLIFY_SITE_ID, NETLIFY_API_TOKEN } = process.env;
 
   // For local dev, these variables are required.

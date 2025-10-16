@@ -19,7 +19,8 @@ const handler: Handler = async (event) => {
     const { data, metadata } = result;
 
     const headers = {
-        'Content-Type': metadata?.mimeType || 'application/octet-stream',
+        // FIX: Cast metadata.mimeType to string to satisfy HeadersInit type.
+        'Content-Type': (metadata?.mimeType as string) || 'application/octet-stream',
         'Content-Length': data.byteLength.toString(),
         'Cache-Control': 'public, max-age=31536000, immutable' // Cache for 1 year
     };

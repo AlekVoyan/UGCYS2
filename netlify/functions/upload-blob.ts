@@ -1,6 +1,7 @@
 import type { Handler, HandlerContext } from "@netlify/functions";
 import { getUploadsStore } from "./utils/blobStore";
 import { v4 as uuidv4 } from 'uuid';
+import type { Store } from "@netlify/blobs";
 
 const jsonResponse = (status: number, body: object) => {
     return new Response(JSON.stringify(body), {
@@ -34,7 +35,10 @@ const handler: Handler = async (event, context: HandlerContext) => {
         const store = getUploadsStore();
         
         // Generate a URL that allows the client to PUT a file for 1 hour
-        const signedUrl = await store.getSignedURL(key, { 
+        // FIX: Use an inline type assertion to resolve the type error. This handles cases
+        // where the project's @netlify/blobs version has outdated type definitions
+        // but the method exists at runtime.
+        const signedUrl = await (store as Store & { getSignedURL: Function }).getSignedURL(key, { 
             expiresIn: 3600, // 1 hour
             access: 'put'
         });

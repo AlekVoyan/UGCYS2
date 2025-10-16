@@ -25,7 +25,6 @@ const handler: Handler = async (event) => {
     };
 
     return new Response(data, {
-        // FIX: Replaced `statusCode` with the correct property `status` for the Response constructor.
         status: 200,
         headers,
     });

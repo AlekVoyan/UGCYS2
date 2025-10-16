@@ -10,6 +10,9 @@ interface AdminPageProps {
   onLogout: () => void;
 }
 
+const MAX_VIDEO_SIZE_BYTES = 20 * 1024 * 1024; // 20MB for videos
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB limit for images pre-compression
+
 const getMediaUrl = (src: string) => {
     if (!src || src.startsWith('data:') || src.startsWith('/')) {
         return src;
@@ -80,6 +83,63 @@ const Tooltip = ({ text }: { text: string }) => (
         <div className="tooltip-text">{text}</div>
     </div>
 );
+
+// --- NEW UPLOAD HELPERS for Signed URL Flow ---
+
+const dataURLtoBlob = (dataUrl: string): Blob => {
+    const arr = dataUrl.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    if (!mimeMatch) {
+        throw new Error('Invalid data URL');
+    }
+    const mime = mimeMatch[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+};
+
+const uploadFile = async (file: File | Blob, filename: string): Promise<{ key: string }> => {
+    const user = window.netlifyIdentity?.currentUser();
+    if (!user) {
+        throw new Error("User not authenticated.");
+    }
+    const token = await user.jwt();
+
+    // Step 1: Get a signed URL from our serverless function
+    const signedUrlResponse = await fetch('/.netlify/functions/upload-blob', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ filename: filename, mimeType: file.type })
+    });
+
+    if (!signedUrlResponse.ok) {
+        const errorData = await signedUrlResponse.json();
+        throw new Error(errorData.message || 'Could not get signed URL.');
+    }
+    const { key, signedUrl } = await signedUrlResponse.json();
+
+    // Step 2: Upload the file directly to the blob store using the signed URL
+    const uploadResponse = await fetch(signedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+            'Content-Type': file.type,
+        }
+    });
+
+    if (!uploadResponse.ok) {
+        throw new Error('Direct upload to blob store failed.');
+    }
+    
+    return { key };
+};
 
 
 export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, onLogout }) => {
@@ -250,41 +310,25 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
     if (!files || files.length === 0) return;
   
     const allFiles: File[] = Array.from(files);
-    setUploadingFiles(allFiles.map(f => f.name));
-  
-    const user = window.netlifyIdentity?.currentUser();
-    if (!user) {
-      alert("Authentication error. Please log out and log back in.");
-      setUploadingFiles([]);
-      return;
+    
+    if (allFiles.some(file => file.size > MAX_IMAGE_SIZE_BYTES)) {
+        alert(`One or more images are too large. Please ensure each file is under ${(MAX_IMAGE_SIZE_BYTES / 1024 / 1024).toFixed(1)}MB.`);
+        e.target.value = ''; // Reset file input
+        return;
     }
-    const token = await user.jwt();
+    
+    setUploadingFiles(allFiles.map(f => f.name));
   
     const uploadPromises = allFiles.map(file => {
       return (async () => {
         try {
-          const dataUrl = await resizeImage(file);
-          const response = await fetch('/.netlify/functions/upload-blob', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              image: dataUrl,
-              filename: file.name,
-              mimeType: file.type,
-            }),
-          });
-  
-          if (!response.ok) {
-            throw new Error(`Upload failed for ${file.name}`);
-          }
-  
-          const { key } = await response.json();
+          const resizedDataUrl = await resizeImage(file);
+          const imageBlob = dataURLtoBlob(resizedDataUrl);
+          const { key } = await uploadFile(imageBlob, file.name);
           return { src: key, alt: file.name, name: file.name };
         } catch (error) {
-          console.error(error);
+          console.error(`Upload failed for ${file.name}:`, error);
+          alert(`Upload failed for ${file.name}. Please check the console for details.`);
           return null;
         }
       })();
@@ -667,24 +711,17 @@ const BlogPostForm = ({ item, index, onChange }: { item: BlogPost, index: number
         const file = e.target.files?.[0];
         if (!file) return;
 
+        if (file.size > MAX_IMAGE_SIZE_BYTES) {
+            alert(`Image is too large (${(file.size / 1024 / 1024).toFixed(2)} MB). Please use an image smaller than ${(MAX_IMAGE_SIZE_BYTES / 1024 / 1024).toFixed(1)} MB.`);
+            e.target.value = '';
+            return;
+        }
+
         setIsUploading(true);
         try {
-            const user = window.netlifyIdentity?.currentUser();
-            if (!user) throw new Error("User not authenticated.");
-            const token = await user.jwt();
-
-            const dataUrl = await resizeImage(file);
-            const response = await fetch('/.netlify/functions/upload-blob', {
-                method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ image: dataUrl, filename: file.name, mimeType: file.type })
-            });
-
-            if (!response.ok) throw new Error('Upload failed.');
-            const { key } = await response.json();
+            const resizedDataUrl = await resizeImage(file);
+            const imageBlob = dataURLtoBlob(resizedDataUrl);
+            const { key } = await uploadFile(imageBlob, file.name);
             onChange(['blogPosts', index, 'featuredImage'], key);
 
         } catch (error) {
@@ -799,25 +836,11 @@ const PhotoEditor = ({ photos, onUploadClick, onDelete, dragItem, dragOverItem, 
 );
 
 const assetLabels: { [key: string]: { label: string; type: 'image' | 'video', tip: string } } = {
-  heroBackgroundVideo: { label: 'Homepage Hero Background', type: 'video', tip: '1920x1080 (16:9). Keep file size small (<10MB) for fast loading.' },
+  heroBackgroundVideo: { label: 'Homepage Hero Background', type: 'video', tip: '1920x1080 (16:9). Keep file size small (<20MB) for fast loading.' },
   homeIntroImage: { label: 'Homepage Intro Section Image', type: 'image', tip: 'Recommended: Portrait orientation, optimized JPEG < 500KB.' },
   aboutHeroImage: { label: 'About Page Hero Image', type: 'image', tip: 'Recommended: Portrait orientation, optimized PNG for transparency if needed.' },
   aboutAcademicImage: { label: 'About Page "Academic Edge" Image', type: 'image', tip: 'Recommended: Landscape (4:5 ratio), optimized JPEG < 600KB.' },
   contactVisualImage: { label: 'Contact Page Visual', type: 'image', tip: 'Recommended: Portrait or square, optimized JPEG < 500KB.' },
-};
-
-const processFileForUpload = (file: File, assetType: 'image' | 'video'): Promise<string> => {
-    if (assetType === 'image') {
-        if (file.type.startsWith('image/') && file.type !== 'image/gif') {
-            return resizeImage(file);
-        }
-    }
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = error => reject(error);
-    });
 };
 
 const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingState }: any) => {
@@ -827,29 +850,26 @@ const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingStat
         const file = e.target.files?.[0];
         if (!file) return;
 
+        const limit = type === 'video' ? MAX_VIDEO_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES;
+        const limitMB = (limit / 1024 / 1024).toFixed(1);
+
+        if (file.size > limit) {
+            alert(`File is too large (${(file.size / 1024 / 1024).toFixed(2)} MB). Please upload a file smaller than ${limitMB} MB.`);
+            e.target.value = '';
+            return;
+        }
+
         setUploadingState(key, true);
         try {
-            const user = window.netlifyIdentity?.currentUser();
-            if (!user) throw new Error("User not authenticated.");
-            const token = await user.jwt();
-
-            const dataUrl = await processFileForUpload(file, type);
-            
-            const response = await fetch('/.netlify/functions/upload-blob', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ image: dataUrl, filename: file.name, mimeType: file.type })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Upload failed.');
+            let blobToUpload: Blob;
+            if (type === 'image') {
+                const resizedDataUrl = await resizeImage(file);
+                blobToUpload = dataURLtoBlob(resizedDataUrl);
+            } else {
+                blobToUpload = file;
             }
 
-            const { key: newKey } = await response.json();
+            const { key: newKey } = await uploadFile(blobToUpload, file.name);
             onChange(['siteSingletonAssets', key], newKey);
 
         } catch (error) {
@@ -917,30 +937,15 @@ const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC,
         const file = e.target.files?.[0];
         if (!file) return;
 
+        if (file.size > MAX_VIDEO_SIZE_BYTES) {
+            alert(`Video is too large (${(file.size / 1024 / 1024).toFixed(2)} MB). Please upload a video smaller than 20 MB.`);
+            e.target.value = '';
+            return;
+        }
+
         setIsUploading(true);
         try {
-            const user = window.netlifyIdentity?.currentUser();
-            if (!user) throw new Error("User not authenticated.");
-            const token = await user.jwt();
-
-            const dataUrl = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result as string);
-                reader.onerror = error => reject(error);
-            });
-
-            const response = await fetch('/.netlify/functions/upload-blob', {
-                method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ image: dataUrl, filename: file.name, mimeType: file.type })
-            });
-
-            if (!response.ok) throw new Error('Upload failed.');
-            const { key } = await response.json();
+            const { key } = await uploadFile(file, file.name);
             onChange(['featuredWorkDataUGC', index, 'videoSrc'], key);
 
         } catch (error) {
@@ -954,7 +959,7 @@ const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC,
     return (
         <div className="admin-form">
             <div className="form-section">
-                <label>UGC Video <Tooltip text="9:16 vertical video. Compress for web. Max 15MB is ideal." /></label>
+                <label>UGC Video <Tooltip text="9:16 vertical video. Compress for web. Max 20MB is ideal." /></label>
                 {item.videoSrc && (
                     <div className="image-preview-container">
                         <video src={getMediaUrl(item.videoSrc)} controls loop muted className="image-preview" key={item.videoSrc}/>
@@ -990,24 +995,16 @@ const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: 
     const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        if (file.size > MAX_VIDEO_SIZE_BYTES) {
+            alert(`Video is too large (${(file.size / 1024 / 1024).toFixed(2)} MB). Please upload a video smaller than 20 MB.`);
+            e.target.value = '';
+            return;
+        }
+
         setIsUploading(true);
         try {
-            const user = window.netlifyIdentity?.currentUser();
-            if (!user) throw new Error("User not authenticated.");
-            const token = await user.jwt();
-            const dataUrl = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result as string);
-                reader.onerror = error => reject(error);
-            });
-            const response = await fetch('/.netlify/functions/upload-blob', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: dataUrl, filename: file.name, mimeType: file.type })
-            });
-            if (!response.ok) throw new Error('Upload failed.');
-            const { key } = await response.json();
+            const { key } = await uploadFile(file, file.name);
             onChange(['powerCardsData', index, 'videoSrc'], key);
         } catch (error) {
             console.error("Video upload failed:", error);
@@ -1020,7 +1017,7 @@ const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: 
     return (
         <div className="admin-form">
             <div className="form-section">
-                <label>Preview Video <Tooltip text="16:9 video. Short, looping clip. Compress for web. Max 5MB is ideal." /></label>
+                <label>Preview Video <Tooltip text="16:9 video. Short, looping clip. Compress for web. Max 20MB is ideal." /></label>
                 {item.videoSrc && (
                     <div className="image-preview-container">
                         <video src={getMediaUrl(item.videoSrc)} controls loop muted className="image-preview" key={item.videoSrc}/>
@@ -1089,23 +1086,17 @@ const LogoCard = ({ logo, index, onDelete, onChange, ...dragProps }: { logo: Tru
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // If there's an existing blob, we should ideally delete it.
-        // This is a simplified version; a more robust solution would do this.
+        if (file.size > 2 * 1024 * 1024) { // 2MB limit for logos
+            alert(`Image is too large (${(file.size / 1024 / 1024).toFixed(2)} MB). Please use an image smaller than 2 MB.`);
+            e.target.value = '';
+            return;
+        }
         
         setIsUploading(true);
         try {
-            const user = window.netlifyIdentity?.currentUser();
-            if (!user) throw new Error("User not authenticated.");
-            const token = await user.jwt();
-            const dataUrl = await resizeImage(file);
-            const response = await fetch('/.netlify/functions/upload-blob', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: dataUrl, filename: file.name, mimeType: file.type })
-            });
-
-            if (!response.ok) throw new Error('Upload failed.');
-            const { key } = await response.json();
+            const resizedDataUrl = await resizeImage(file);
+            const imageBlob = dataURLtoBlob(resizedDataUrl);
+            const { key } = await uploadFile(imageBlob, file.name);
             onChange(['trustedByLogos', index, 'src'], key);
         } catch (error) {
             console.error("Image upload failed:", error);

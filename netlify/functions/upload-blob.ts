@@ -1,5 +1,5 @@
 import type { Handler, HandlerContext, HandlerResponse } from "@netlify/functions";
-import { getUploadsStore } from "./utils/blobStore";
+import { getStore } from "@netlify/blobs";
 import { v4 as uuidv4 } from 'uuid';
 import type { Store } from "@netlify/blobs";
 
@@ -34,7 +34,7 @@ const handler: Handler = async (event, context: HandlerContext) => {
         }
         
         const key = uuidv4();
-        const store = getUploadsStore();
+        const store = getStore("uploads");
         
         // Generate a URL that allows the client to PUT a file for 1 hour
         // FIX: Use an inline type assertion to resolve the type error. This handles cases

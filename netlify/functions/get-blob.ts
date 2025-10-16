@@ -1,6 +1,6 @@
 // FIX: Refactored to return HandlerResponse objects instead of native Response to align with the Handler type.
 import type { Handler, HandlerEvent } from "@netlify/functions";
-import { getUploadsStore } from "./utils/blobStore";
+import { getStore } from "@netlify/blobs";
 import { Buffer } from "buffer";
 
 const handler: Handler = async (event: HandlerEvent) => {
@@ -14,7 +14,7 @@ const handler: Handler = async (event: HandlerEvent) => {
   }
 
   try {
-    const store = getUploadsStore();
+    const store = getStore("uploads");
     const result = await store.getWithMetadata(key, { type: "arrayBuffer" });
 
     if (result === null) {

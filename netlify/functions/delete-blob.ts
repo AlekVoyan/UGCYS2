@@ -1,5 +1,5 @@
 import type { Handler, HandlerContext, HandlerResponse } from "@netlify/functions";
-import { getUploadsStore } from "./utils/blobStore";
+import { getStore } from "@netlify/blobs";
 
 // FIX: Refactored to return HandlerResponse objects instead of native Response to align with the Handler type.
 const jsonResponse = (status: number, body: object): HandlerResponse => {
@@ -31,7 +31,7 @@ const handler: Handler = async (event, context: HandlerContext) => {
             return jsonResponse(400, { message: 'Blob key not provided' });
         }
         
-        const store = getUploadsStore();
+        const store = getStore("uploads");
         await store.delete(key);
         
         return jsonResponse(200, { message: "Blob deleted successfully." });

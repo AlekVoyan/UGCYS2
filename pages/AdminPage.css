@@ -203,7 +203,30 @@
 
 .admin-header-actions {
     display: flex;
+    align-items: center;
     gap: 1rem;
+}
+
+.unsaved-changes-indicator, .publish-info-indicator {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    margin-right: 0.5rem;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.publish-info-indicator {
+    color: #28a745; /* Success Green */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.admin-header-actions .button.dirty {
+    animation: button-glow-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    border-color: rgba(var(--accent-color-rgb), 0.5);
+    background-image: linear-gradient(45deg, #E60023, #ff7676);
 }
 
 .admin-header-actions .button.button-secondary {

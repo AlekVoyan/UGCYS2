@@ -183,7 +183,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
   const [uploadingSingletonAssets, setUploadingSingletonAssets] = useState<{ [key: string]: boolean }>({});
+  const [isDirty, setIsDirty] = useState(false);
 
+  useEffect(() => {
+    // Check for unsaved changes by comparing initial content with editable content
+    const initialContentString = JSON.stringify(content);
+    const editableContentString = JSON.stringify(editableContent);
+    setIsDirty(initialContentString !== editableContentString);
+  }, [editableContent, content]);
+
+  useEffect(() => {
+    // Warn user before leaving with unsaved changes
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = ''; // Required for modern browsers to show the prompt
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isDirty]);
 
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -244,9 +266,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
       
       updateContent(contentToSave);
       setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 2000);
+      setTimeout(() => setSaveStatus('idle'), 5000); // Show success message for 5 seconds
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save failed:', error);
       setSaveStatus('error');
       alert(`Error: ${(error as Error).message}`);
@@ -257,7 +279,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
   const getSaveButtonText = () => {
     switch (saveStatus) {
       case 'saving': return 'Saving...';
-      case 'success': return 'Success!';
+      case 'success': return 'Published!';
       case 'error': return 'Error! Retry?';
       default: return 'Save All Changes';
     }
@@ -267,6 +289,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
     let base = "button";
     if (saveStatus === 'success') base += ' success';
     if (saveStatus === 'error') base += ' error';
+    if (isDirty && saveStatus === 'idle') base += ' dirty';
     return base;
   };
 
@@ -530,8 +553,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
                 </button>
                 <h1>{activeSection.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h1>
                 <div className="admin-header-actions">
+                    {isDirty && saveStatus === 'idle' && <span className="unsaved-changes-indicator">You have unsaved changes</span>}
+                    {saveStatus === 'success' && <span className="publish-info-indicator">Changes are publishing (may take a few minutes to appear live)</span>}
                     <button onClick={onLogout} className="button button-secondary">Logout</button>
-                    <button onClick={() => handleSave()} className={getSaveButtonClass()} disabled={saveStatus === 'saving'}>
+                    <button onClick={() => handleSave()} className={getSaveButtonClass()} disabled={saveStatus === 'saving' || saveStatus === 'success'}>
                         {getSaveButtonText()}
                     </button>
                 </div>

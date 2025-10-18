@@ -84,7 +84,7 @@ const Tooltip = ({ text }: { text: string }) => (
     </div>
 );
 
-// --- NEW UPLOAD HELPERS for Signed URL Flow ---
+// --- NEW UPLOAD HELPERS for Direct Upload Flow ---
 
 const dataURLtoBlob = (dataUrl: string): Blob => {
     const arr = dataUrl.split(',');
@@ -102,6 +102,23 @@ const dataURLtoBlob = (dataUrl: string): Blob => {
     return new Blob([u8arr], { type: mime });
 };
 
+// Helper to read blob to base64
+const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+                // remove the prefix e.g. "data:image/jpeg;base64,"
+                resolve(reader.result.split(',')[1]);
+            } else {
+                reject(new Error("Failed to read blob as base64 string."));
+            }
+        };
+        reader.onerror = (error) => reject(error);
+    });
+};
+
 const uploadFile = async (file: File | Blob, filename: string): Promise<{ key: string }> => {
     const user = window.netlifyIdentity?.currentUser();
     if (!user) {
@@ -109,35 +126,25 @@ const uploadFile = async (file: File | Blob, filename: string): Promise<{ key: s
     }
     const token = await user.jwt();
 
-    // Step 1: Get a signed URL from our serverless function
-    const signedUrlResponse = await fetch('/.netlify/functions/upload-blob', {
+    // Convert file to base64
+    const base64Data = await blobToBase64(file);
+
+    // Send the base64 data to our function for direct upload
+    const response = await fetch('/.netlify/functions/upload-blob', {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ filename: filename, mimeType: file.type })
+        body: JSON.stringify({ fileData: base64Data, mimeType: file.type })
     });
 
-    if (!signedUrlResponse.ok) {
-        const errorData = await signedUrlResponse.json();
-        throw new Error(errorData.message || 'Could not get signed URL.');
-    }
-    const { key, signedUrl } = await signedUrlResponse.json();
-
-    // Step 2: Upload the file directly to the blob store using the signed URL
-    const uploadResponse = await fetch(signedUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-            'Content-Type': file.type,
-        }
-    });
-
-    if (!uploadResponse.ok) {
-        throw new Error('Direct upload to blob store failed.');
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Could not upload file.');
     }
     
+    const { key } = await response.json();
     return { key };
 };
 

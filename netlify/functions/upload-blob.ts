@@ -1,8 +1,8 @@
 import type { Handler, HandlerContext, HandlerResponse, HandlerEvent } from "@netlify/functions";
 import { getStore, connectLambda } from "@netlify/blobs";
 import { v4 as uuidv4 } from 'uuid';
+import { Buffer } from 'buffer';
 
-// FIX: Refactored to return HandlerResponse objects instead of native Response to align with the Handler type.
 const jsonResponse = (status: number, body: object): HandlerResponse => {
     return {
         statusCode: status,
@@ -12,7 +12,6 @@ const jsonResponse = (status: number, body: object): HandlerResponse => {
 };
 
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
-    // FIX: Cast `event` to `any` to resolve a type mismatch between `HandlerEvent` and `connectLambda`'s expected `LambdaEvent` type.
     connectLambda(event as any);
 
     if (event.httpMethod !== 'POST') {
@@ -29,28 +28,29 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     }
 
     try {
-        // This function now expects filename and mimeType to generate a signed URL
-        const { filename, mimeType } = JSON.parse(event.body);
-        if (!filename || !mimeType) {
-            return jsonResponse(400, { message: 'Missing filename or mimeType for signed URL generation' });
+        const { fileData, mimeType } = JSON.parse(event.body);
+        if (!fileData || !mimeType) {
+            return jsonResponse(400, { message: 'Missing fileData or mimeType for upload' });
         }
-        
+
         const key = uuidv4();
+        const buffer = Buffer.from(fileData, 'base64');
+        
         const store = getStore("uploads");
-        
-        // Generate a URL that allows the client to PUT a file for 1 hour
-        // FIX: Cast `store` to `any` to bypass an outdated TypeScript type definition that reports `getSignedURL` as not existing. This relies on the method being available in the Netlify runtime.
-        const signedUrl = await (store as any).getSignedURL(key, { 
-            expiresIn: 3600, // 1 hour
-            access: 'put'
-        });
-        
-        // Return the key and the URL for the client to upload to
-        return jsonResponse(200, { key, signedUrl });
+        // FIX: The `store.set` method expects an ArrayBuffer, but `Buffer.from` returns a Buffer.
+        // Convert the Buffer to an ArrayBuffer to match the required type.
+        // The slice is used to safely get the correct segment of the underlying ArrayBuffer.
+        const arrayBuffer = buffer.buffer.slice(
+            buffer.byteOffset,
+            buffer.byteOffset + buffer.byteLength
+        );
+        await store.set(key, arrayBuffer, { metadata: { mimeType } });
+
+        return jsonResponse(200, { key });
 
     } catch (error) {
-        console.error("Signed URL generation error:", error);
-        return jsonResponse(500, { message: 'Failed to get signed URL', error: (error as Error).message });
+        console.error("Upload error:", error);
+        return jsonResponse(500, { message: 'Failed to upload blob', error: (error as Error).message });
     }
 };
 

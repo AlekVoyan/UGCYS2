@@ -1,0 +1,110 @@
+.edit-mode-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: rgba(16, 16, 16, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-color);
+  z-index: 1001; /* Above header when menu is closed */
+  box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+  color: var(--heading-color);
+}
+
+.banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 1rem 5%;
+  gap: 1.5rem;
+}
+
+.banner-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.banner-info p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.banner-info p strong {
+  color: var(--heading-color);
+  font-weight: 600;
+}
+
+.live-indicator {
+  width: 12px;
+  height: 12px;
+  background-color: var(--accent-color);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--accent-color-rgb), 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(var(--accent-color-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--accent-color-rgb), 0);
+  }
+}
+
+.banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.banner-actions .button {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+}
+
+.banner-actions .button.button-secondary {
+  background: transparent;
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+.banner-actions .button.button-secondary:hover:not(:disabled) {
+  background: var(--card-bg-color);
+  border-color: var(--heading-color);
+  color: var(--heading-color);
+}
+
+.banner-actions .button.success {
+  background-image: none;
+  background-color: #28a745;
+  cursor: default;
+}
+
+.banner-actions .button.error {
+  background-image: none;
+  background-color: #E60023;
+}
+
+@media (max-width: 768px) {
+  .banner-content {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    gap: 1rem;
+  }
+  .banner-info {
+    justify-content: center;
+  }
+  .banner-actions {
+    justify-content: center;
+  }
+}

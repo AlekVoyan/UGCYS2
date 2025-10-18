@@ -6,7 +6,7 @@ import { ChevronDown, LayoutGrid, FileText, Image as ImageIcon, Trash2, PlusCirc
 
 interface AdminPageProps {
   content: SiteContent;
-  updateContent: (newContent: SiteContent) => void;
+  setContent: (newContent: SiteContent) => void;
   onLogout: () => void;
 }
 
@@ -17,12 +17,9 @@ const getMediaUrl = (src: string) => {
     if (!src || src.startsWith('data:') || src.startsWith('/')) {
         return src;
     }
-    // Assume it's a blob key
     return `/.netlify/functions/get-blob?key=${src}`;
 };
 
-// Deep cloning and path-based updates to avoid state mutation issues
-const get = (obj: any, path: (string | number)[]) => path.reduce((acc, part) => acc && acc[part], obj);
 const set = (obj: any, path: (string | number)[], value: any) => {
     const newObj = JSON.parse(JSON.stringify(obj));
     let current = newObj;
@@ -63,13 +60,10 @@ const resizeImage = (file: File): Promise<string> => {
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    return reject(new Error('Could not get canvas context'));
-                }
+                if (!ctx) return reject(new Error('Could not get canvas context'));
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8); 
-                resolve(dataUrl);
+                resolve(canvas.toDataURL('image/jpeg', 0.8));
             };
             img.onerror = (err) => reject(err);
         };
@@ -84,14 +78,10 @@ const Tooltip = ({ text }: { text: string }) => (
     </div>
 );
 
-// --- NEW UPLOAD HELPERS for Direct Upload Flow ---
-
 const dataURLtoBlob = (dataUrl: string): Blob => {
     const arr = dataUrl.split(',');
     const mimeMatch = arr[0].match(/:(.*?);/);
-    if (!mimeMatch) {
-        throw new Error('Invalid data URL');
-    }
+    if (!mimeMatch) throw new Error('Invalid data URL');
     const mime = mimeMatch[1];
     const bstr = atob(arr[1]);
     let n = bstr.length;
@@ -102,14 +92,12 @@ const dataURLtoBlob = (dataUrl: string): Blob => {
     return new Blob([u8arr], { type: mime });
 };
 
-// Helper to read blob to base64
 const blobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(blob);
         reader.onloadend = () => {
             if (typeof reader.result === 'string') {
-                // remove the prefix e.g. "data:image/jpeg;base64,"
                 resolve(reader.result.split(',')[1]);
             } else {
                 reject(new Error("Failed to read blob as base64 string."));
@@ -119,17 +107,13 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
     });
 };
 
-const uploadFile = async (file: File | Blob, filename: string): Promise<{ key: string }> => {
+const uploadFile = async (file: File | Blob): Promise<{ key: string }> => {
     const user = window.netlifyIdentity?.currentUser();
-    if (!user) {
-        throw new Error("User not authenticated.");
-    }
+    if (!user) throw new Error("User not authenticated.");
     const token = await user.jwt();
 
-    // Convert file to base64
     const base64Data = await blobToBase64(file);
 
-    // Send the base64 data to our function for direct upload
     const response = await fetch('/.netlify/functions/upload-blob', {
         method: 'POST',
         headers: {
@@ -149,25 +133,8 @@ const uploadFile = async (file: File | Blob, filename: string): Promise<{ key: s
 };
 
 
-export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, onLogout }) => {
+export const AdminPage: React.FC<AdminPageProps> = ({ content, setContent, onLogout }) => {
   const [activeSection, setActiveSection] = useState('portfolio-case-studies');
-  const [editableContent, setEditableContent] = useState<SiteContent>(() => {
-    try {
-        const savedContentJSON = localStorage.getItem('adminEditableContent');
-        if (savedContentJSON) {
-            const { contentData, savedAt } = JSON.parse(savedContentJSON);
-            // Use local data if it's less than 30 minutes old to prevent using stale data indefinitely
-            if (contentData && Date.now() - savedAt < 30 * 60 * 1000) {
-                return contentData;
-            }
-        }
-    } catch (error) {
-        console.error("Failed to load admin content from localStorage:", error);
-        localStorage.removeItem('adminEditableContent'); // Clear corrupted data
-    }
-    return JSON.parse(JSON.stringify(content));
-  });
-
   const [openAccordion, setOpenAccordion] = useState<string | null>('cs-0');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragItem = useRef<number | null>(null);
@@ -180,33 +147,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
   });
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
   const [uploadingSingletonAssets, setUploadingSingletonAssets] = useState<{ [key: string]: boolean }>({});
-  const [isDirty, setIsDirty] = useState(false);
-
-  useEffect(() => {
-    // Check for unsaved changes by comparing initial content with editable content
-    const initialContentString = JSON.stringify(content);
-    const editableContentString = JSON.stringify(editableContent);
-    setIsDirty(initialContentString !== editableContentString);
-  }, [editableContent, content]);
-
-  useEffect(() => {
-    // Warn user before leaving with unsaved changes
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = ''; // Required for modern browsers to show the prompt
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [isDirty]);
-
+  
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -218,99 +161,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
     };
   }, [isMobileMenuOpen]);
 
-  const updateEditableContent = (newContent: SiteContent) => {
-    setEditableContent(newContent);
-    try {
-        localStorage.setItem('adminEditableContent', JSON.stringify({
-            contentData: newContent,
-            savedAt: Date.now()
-        }));
-    } catch (error) {
-        console.error("Failed to save admin content to localStorage:", error);
-        alert("Warning: Could not save your changes locally. They might be lost on page refresh if not saved to the server.");
-    }
-  };
-
-
-  const handleSave = async (contentToSave: SiteContent = editableContent) => {
-    setSaveStatus('saving');
-    try {
-      const user = window.netlifyIdentity?.currentUser();
-      if (!user) {
-        throw new Error('Not logged in. Please refresh and try again.');
-      }
-      const token = await user.jwt();
-
-      const response = await fetch('/.netlify/functions/saveContent', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(contentToSave, null, 2)
-      });
-
-      if (!response.ok) {
-        let errorMessage = `Error ${response.status}: ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || JSON.stringify(errorData);
-        } catch (e) {
-          // Response was not JSON, use plain text
-          const textError = await response.text();
-          if (textError) {
-            errorMessage = textError;
-          }
-        }
-        throw new Error(errorMessage);
-      }
-      
-      updateContent(contentToSave);
-      setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 5000); // Show success message for 5 seconds
-
-    } catch (error: any) {
-      console.error('Save failed:', error);
-      setSaveStatus('error');
-      alert(`Error: ${(error as Error).message}`);
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    }
-  };
-  
-  const getSaveButtonText = () => {
-    switch (saveStatus) {
-      case 'saving': return 'Saving...';
-      case 'success': return 'Published!';
-      case 'error': return 'Error! Retry?';
-      default: return 'Save All Changes';
-    }
-  };
-  
-  const getSaveButtonClass = () => {
-    let base = "button";
-    if (saveStatus === 'success') base += ' success';
-    if (saveStatus === 'error') base += ' error';
-    if (isDirty && saveStatus === 'idle') base += ' dirty';
-    return base;
-  };
-
-
   const handleSearchChange = (section: keyof typeof searchTerms, value: string) => {
       setSearchTerms(prev => ({ ...prev, [section]: value }));
   };
 
-  const handleFieldChange = (path: (string | number)[], value: any, options = { shouldSave: false }) => {
-    const newContent = set(editableContent, path, value);
-    updateEditableContent(newContent);
-    if (options.shouldSave) {
-        handleSave(newContent);
-    }
+  const handleFieldChange = (path: (string | number)[], value: any) => {
+    const newContent = set(content, path, value);
+    setContent(newContent);
   };
 
   const toggleAccordion = (id: string) => {
     setOpenAccordion(openAccordion === id ? null : id);
   };
 
-  // --- ADD/DELETE Functionality ---
   const addItem = (type: 'caseStudiesData' | 'blogPosts' | 'powerCardsData' | 'featuredWorkDataUGC' | 'trustedByLogos') => {
     let template;
     switch(type) {
@@ -320,29 +183,27 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
         case 'featuredWorkDataUGC': template = newFeaturedWorkUGCTemplate; break;
         case 'trustedByLogos': template = newTrustedByLogoTemplate; break;
     }
-    const currentArray = editableContent[type];
+    const currentArray = content[type];
     const newArray = [JSON.parse(JSON.stringify(template)), ...currentArray];
-    updateEditableContent({ ...editableContent, [type]: newArray });
+    setContent({ ...content, [type]: newArray });
     if (type !== 'trustedByLogos') {
       setOpenAccordion(`${type.replace('Data', '').replace('s', '')}-0`);
     }
   };
 
   const deleteItem = async (type: 'caseStudiesData' | 'blogPosts' | 'photosData' | 'powerCardsData' | 'featuredWorkDataUGC' | 'trustedByLogos', index: number) => {
-    if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+    if (!confirm('Are you sure you want to delete this item? This action will be saved immediately.')) {
         return;
     }
 
-    const itemToDelete = (editableContent as any)[type][index];
+    const itemToDelete = (content as any)[type][index];
     let keyToDelete = '';
 
-    if (type === 'photosData') {
-        keyToDelete = itemToDelete.src;
-    } else if (type === 'trustedByLogos') {
+    if (type === 'photosData' || type === 'trustedByLogos') {
         keyToDelete = itemToDelete.src;
     }
 
-    if (keyToDelete && !keyToDelete.startsWith('data:image')) {
+    if (keyToDelete && !keyToDelete.startsWith('data:')) {
         try {
             const user = window.netlifyIdentity?.currentUser();
             if (!user) throw new Error("User not authenticated.");
@@ -361,15 +222,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
         }
     }
     
-    const currentArray = (editableContent as any)[type];
+    const currentArray = (content as any)[type];
     const newArray = currentArray.filter((_: any, i: number) => i !== index);
-    const newContent = { ...editableContent, [type]: newArray };
-    updateEditableContent(newContent);
-    await handleSave(newContent);
+    setContent({ ...content, [type]: newArray });
   };
 
-
-  // --- Photo Management ---
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -378,7 +235,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
     
     if (allFiles.some(file => file.size > MAX_IMAGE_SIZE_BYTES)) {
         alert(`One or more images are too large. Please ensure each file is under ${(MAX_IMAGE_SIZE_BYTES / 1024 / 1024).toFixed(1)}MB.`);
-        e.target.value = ''; // Reset file input
+        e.target.value = '';
         return;
     }
     
@@ -389,7 +246,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
         try {
           const resizedDataUrl = await resizeImage(file);
           const imageBlob = dataURLtoBlob(resizedDataUrl);
-          const { key } = await uploadFile(imageBlob, file.name);
+          const { key } = await uploadFile(imageBlob);
           return { src: key, alt: file.name, name: file.name };
         } catch (error) {
           console.error(`Upload failed for ${file.name}:`, error);
@@ -403,24 +260,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
     const newPhotos = results.filter((p): p is PhotoData => p !== null);
   
     if (newPhotos.length > 0) {
-      const newContent = {
-        ...editableContent,
-        photosData: [...newPhotos, ...editableContent.photosData],
-      };
-      updateEditableContent(newContent);
-      await handleSave(newContent);
+      setContent({
+        ...content,
+        photosData: [...newPhotos, ...content.photosData],
+      });
     }
     setUploadingFiles([]);
   };
 
   const handleDragSort = () => {
     if (dragItem.current === null || dragOverItem.current === null) return;
-    const newPhotos = [...editableContent.photosData];
+    const newPhotos = [...content.photosData];
     const draggedItemContent = newPhotos.splice(dragItem.current, 1)[0];
     newPhotos.splice(dragOverItem.current, 0, draggedItemContent);
     dragItem.current = null;
     dragOverItem.current = null;
-    updateEditableContent({ ...editableContent, photosData: newPhotos });
+    setContent({ ...content, photosData: newPhotos });
   };
 
 
@@ -429,7 +284,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
         case 'portfolio-case-studies':
             return <ListEditor
                 title="Portfolio Case Studies"
-                items={editableContent.caseStudiesData}
+                items={content.caseStudiesData}
                 onAdd={() => addItem('caseStudiesData')}
                 onDelete={(index) => deleteItem('caseStudiesData', index)}
                 openAccordion={openAccordion}
@@ -441,7 +296,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
             />;
         case 'portfolio-photos':
             return <PhotoEditor
-                photos={editableContent.photosData}
+                photos={content.photosData}
                 onUploadClick={() => fileInputRef.current?.click()}
                 onDelete={(index) => deleteItem('photosData', index)}
                 dragItem={dragItem}
@@ -452,7 +307,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
         case 'blog':
             return <ListEditor
                 title="Blog Posts"
-                items={editableContent.blogPosts}
+                items={content.blogPosts}
                 onAdd={() => addItem('blogPosts')}
                 onDelete={(index) => deleteItem('blogPosts', index)}
                 openAccordion={openAccordion}
@@ -465,7 +320,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
         case 'homepage-ugc-feed':
             return <ListEditor
                 title="Homepage UGC Feed"
-                items={editableContent.featuredWorkDataUGC}
+                items={content.featuredWorkDataUGC}
                 onAdd={() => addItem('featuredWorkDataUGC')}
                 onDelete={(index) => deleteItem('featuredWorkDataUGC', index)}
                 openAccordion={openAccordion}
@@ -477,7 +332,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
             />;
         case 'trusted-by-logos':
             return <TrustedByLogosEditor
-                logos={editableContent.trustedByLogos}
+                logos={content.trustedByLogos}
                 onAdd={() => addItem('trustedByLogos')}
                 onDelete={(index) => deleteItem('trustedByLogos', index)}
                 onChange={handleFieldChange}
@@ -485,7 +340,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
         case 'about-power-cards':
             return <ListEditor
                 title="About Page Power Cards"
-                items={editableContent.powerCardsData}
+                items={content.powerCardsData}
                 onAdd={() => addItem('powerCardsData')}
                 onDelete={(index) => deleteItem('powerCardsData', index)}
                 openAccordion={openAccordion}
@@ -497,7 +352,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
             />;
         case 'page-visuals':
             return <PageVisualsEditor 
-                assets={editableContent.siteSingletonAssets}
+                assets={content.siteSingletonAssets}
                 onChange={handleFieldChange}
                 uploadingStates={uploadingSingletonAssets}
                 setUploadingState={(key, isUploading) => setUploadingSingletonAssets(prev => ({...prev, [key]: isUploading}))}
@@ -553,12 +408,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
                 </button>
                 <h1>{activeSection.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h1>
                 <div className="admin-header-actions">
-                    {isDirty && saveStatus === 'idle' && <span className="unsaved-changes-indicator">You have unsaved changes</span>}
-                    {saveStatus === 'success' && <span className="publish-info-indicator">Changes are publishing (may take a few minutes to appear live)</span>}
                     <button onClick={onLogout} className="button button-secondary">Logout</button>
-                    <button onClick={() => handleSave()} className={getSaveButtonClass()} disabled={saveStatus === 'saving' || saveStatus === 'success'}>
-                        {getSaveButtonText()}
-                    </button>
                 </div>
             </header>
             <div className="admin-content-area">
@@ -568,9 +418,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
     </div>
   );
 };
-
-
-// --- Sub-components for better organization ---
 
 interface ListEditorProps {
     title: string;
@@ -646,10 +493,7 @@ const ListEditor: React.FC<ListEditorProps> = ({ title, items, onAdd, onDelete, 
 
 const CaseStudyForm = ({ item, index, onChange }: { item: CaseStudyData, index: number, onChange: (path: any[], val: any) => void }) => {
     
-    // State for managing which carousel item accordion is open
     const [openCarouselItem, setOpenCarouselItem] = useState<number | null>(0);
-
-    // Refs for drag and drop
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
 
@@ -674,7 +518,6 @@ const CaseStudyForm = ({ item, index, onChange }: { item: CaseStudyData, index: 
     const handleAddCarouselItem = () => {
         const newItems = [...(item.items || []), newCarouselItemTemplate];
         onChange(['caseStudiesData', index, 'items'], newItems);
-        // Open the newly added item
         setOpenCarouselItem(newItems.length - 1);
     };
 
@@ -772,7 +615,7 @@ const CaseStudyForm = ({ item, index, onChange }: { item: CaseStudyData, index: 
     );
 };
 
-const BlogPostForm = ({ item, index, onChange }: { item: BlogPost, index: number, onChange: (path: any[], val: any, options?: { shouldSave: boolean }) => void }) => {
+const BlogPostForm = ({ item, index, onChange }: { item: BlogPost, index: number, onChange: (path: any[], val: any) => void }) => {
     const blogPostFileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -790,8 +633,8 @@ const BlogPostForm = ({ item, index, onChange }: { item: BlogPost, index: number
         try {
             const resizedDataUrl = await resizeImage(file);
             const imageBlob = dataURLtoBlob(resizedDataUrl);
-            const { key } = await uploadFile(imageBlob, file.name);
-            onChange(['blogPosts', index, 'featuredImage'], key, { shouldSave: true });
+            const { key } = await uploadFile(imageBlob);
+            onChange(['blogPosts', index, 'featuredImage'], key);
 
         } catch (error) {
             console.error("Image processing failed:", error);
@@ -803,32 +646,16 @@ const BlogPostForm = ({ item, index, onChange }: { item: BlogPost, index: number
 
     const handleRemoveImage = async () => {
         const key = item.featuredImage;
-        if (!key || key.startsWith('data:image')) {
+        if (!key || key.startsWith('data:')) {
             onChange(['blogPosts', index, 'featuredImage'], '');
             return;
         }
 
-        if (!confirm("Are you sure you want to remove this image? This will delete it from storage.")) {
+        if (!confirm("Are you sure you want to remove this image?")) {
             return;
         }
 
-        try {
-            const user = window.netlifyIdentity?.currentUser();
-            if (!user) throw new Error("User not authenticated.");
-            const token = await user.jwt();
-
-            const response = await fetch('/.netlify/functions/delete-blob', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ key })
-            });
-            if (!response.ok) throw new Error("Failed to delete from blob storage.");
-
-            onChange(['blogPosts', index, 'featuredImage'], '', { shouldSave: true });
-        } catch (error) {
-            console.error("Failed to delete blob:", error);
-            alert("Could not delete image from storage. Please try again.");
-        }
+        onChange(['blogPosts', index, 'featuredImage'], '');
     };
 
     return (
@@ -938,8 +765,8 @@ const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingStat
                 blobToUpload = file;
             }
 
-            const { key: newKey } = await uploadFile(blobToUpload, file.name);
-            onChange(['siteSingletonAssets', key], newKey, { shouldSave: true });
+            const { key: newKey } = await uploadFile(blobToUpload);
+            onChange(['siteSingletonAssets', key], newKey);
 
         } catch (error) {
             console.error(`Upload failed for ${key}:`, error);
@@ -1014,7 +841,7 @@ const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingStat
     );
 };
 
-const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC, index: number, onChange: (path: any[], val: any, options?: { shouldSave: boolean }) => void }) => {
+const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC, index: number, onChange: (path: any[], val: any) => void }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -1030,8 +857,8 @@ const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC,
 
         setIsUploading(true);
         try {
-            const { key } = await uploadFile(file, file.name);
-            onChange(['featuredWorkDataUGC', index, 'videoSrc'], key, { shouldSave: true });
+            const { key } = await uploadFile(file);
+            onChange(['featuredWorkDataUGC', index, 'videoSrc'], key);
 
         } catch (error) {
             console.error("Video upload failed:", error);
@@ -1073,7 +900,7 @@ const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC,
     );
 };
 
-const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: number, onChange: (path: any[], val: any, options?: { shouldSave: boolean }) => void }) => {
+const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: number, onChange: (path: any[], val: any) => void }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -1089,8 +916,8 @@ const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: 
 
         setIsUploading(true);
         try {
-            const { key } = await uploadFile(file, file.name);
-            onChange(['powerCardsData', index, 'videoSrc'], key, { shouldSave: true });
+            const { key } = await uploadFile(file);
+            onChange(['powerCardsData', index, 'videoSrc'], key);
         } catch (error) {
             console.error("Video upload failed:", error);
             alert("Failed to upload video. Please try again.");
@@ -1121,7 +948,7 @@ const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: 
     );
 };
 
-const TrustedByLogosEditor = ({ logos, onAdd, onDelete, onChange }: { logos: TrustedByLogo[], onAdd: () => void, onDelete: (index: number) => void, onChange: (path: any[], val: any, options?: { shouldSave: boolean }) => void }) => {
+const TrustedByLogosEditor = ({ logos, onAdd, onDelete, onChange }: { logos: TrustedByLogo[], onAdd: () => void, onDelete: (index: number) => void, onChange: (path: any[], val: any) => void }) => {
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
 
@@ -1163,7 +990,7 @@ const TrustedByLogosEditor = ({ logos, onAdd, onDelete, onChange }: { logos: Tru
     );
 };
 
-const LogoCard = ({ logo, index, onDelete, onChange, ...dragProps }: { logo: TrustedByLogo, index: number, onDelete: () => void, onChange: (path: any[], val: any, options?: { shouldSave: boolean }) => void, [key: string]: any }) => {
+const LogoCard = ({ logo, index, onDelete, onChange, ...dragProps }: { logo: TrustedByLogo, index: number, onDelete: () => void, onChange: (path: any[], val: any) => void, [key: string]: any }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -1181,8 +1008,8 @@ const LogoCard = ({ logo, index, onDelete, onChange, ...dragProps }: { logo: Tru
         try {
             const resizedDataUrl = await resizeImage(file);
             const imageBlob = dataURLtoBlob(resizedDataUrl);
-            const { key } = await uploadFile(imageBlob, file.name);
-            onChange(['trustedByLogos', index, 'src'], key, { shouldSave: true });
+            const { key } = await uploadFile(imageBlob);
+            onChange(['trustedByLogos', index, 'src'], key);
         } catch (error) {
             console.error("Image upload failed:", error);
             alert("Failed to upload image.");

@@ -151,7 +151,23 @@ const uploadFile = async (file: File | Blob, filename: string): Promise<{ key: s
 
 export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, onLogout }) => {
   const [activeSection, setActiveSection] = useState('portfolio-case-studies');
-  const [editableContent, setEditableContent] = useState<SiteContent>(() => JSON.parse(JSON.stringify(content)));
+  const [editableContent, setEditableContent] = useState<SiteContent>(() => {
+    try {
+        const savedContentJSON = localStorage.getItem('adminEditableContent');
+        if (savedContentJSON) {
+            const { contentData, savedAt } = JSON.parse(savedContentJSON);
+            // Use local data if it's less than 30 minutes old to prevent using stale data indefinitely
+            if (contentData && Date.now() - savedAt < 30 * 60 * 1000) {
+                return contentData;
+            }
+        }
+    } catch (error) {
+        console.error("Failed to load admin content from localStorage:", error);
+        localStorage.removeItem('adminEditableContent'); // Clear corrupted data
+    }
+    return JSON.parse(JSON.stringify(content));
+  });
+
   const [openAccordion, setOpenAccordion] = useState<string | null>('cs-0');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragItem = useRef<number | null>(null);
@@ -179,6 +195,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
       document.body.style.overflow = 'auto';
     };
   }, [isMobileMenuOpen]);
+
+  const updateEditableContent = (newContent: SiteContent) => {
+    setEditableContent(newContent);
+    try {
+        localStorage.setItem('adminEditableContent', JSON.stringify({
+            contentData: newContent,
+            savedAt: Date.now()
+        }));
+    } catch (error) {
+        console.error("Failed to save admin content to localStorage:", error);
+        alert("Warning: Could not save your changes locally. They might be lost on page refresh if not saved to the server.");
+    }
+  };
 
 
   const handleSave = async (contentToSave: SiteContent = editableContent) => {
@@ -248,7 +277,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
 
   const handleFieldChange = (path: (string | number)[], value: any, options = { shouldSave: false }) => {
     const newContent = set(editableContent, path, value);
-    setEditableContent(newContent);
+    updateEditableContent(newContent);
     if (options.shouldSave) {
         handleSave(newContent);
     }
@@ -270,7 +299,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
     }
     const currentArray = editableContent[type];
     const newArray = [JSON.parse(JSON.stringify(template)), ...currentArray];
-    setEditableContent({ ...editableContent, [type]: newArray });
+    updateEditableContent({ ...editableContent, [type]: newArray });
     if (type !== 'trustedByLogos') {
       setOpenAccordion(`${type.replace('Data', '').replace('s', '')}-0`);
     }
@@ -312,7 +341,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
     const currentArray = (editableContent as any)[type];
     const newArray = currentArray.filter((_: any, i: number) => i !== index);
     const newContent = { ...editableContent, [type]: newArray };
-    setEditableContent(newContent);
+    updateEditableContent(newContent);
     await handleSave(newContent);
   };
 
@@ -355,7 +384,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
         ...editableContent,
         photosData: [...newPhotos, ...editableContent.photosData],
       };
-      setEditableContent(newContent);
+      updateEditableContent(newContent);
       await handleSave(newContent);
     }
     setUploadingFiles([]);
@@ -368,7 +397,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
     newPhotos.splice(dragOverItem.current, 0, draggedItemContent);
     dragItem.current = null;
     dragOverItem.current = null;
-    setEditableContent({ ...editableContent, photosData: newPhotos });
+    updateEditableContent({ ...editableContent, photosData: newPhotos });
   };
 
 

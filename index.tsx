@@ -78,6 +78,7 @@ const App = () => {
   
   const handleLogout = () => {
     if (window.netlifyIdentity) {
+      localStorage.removeItem('adminEditableContent');
       window.netlifyIdentity.logout();
     }
   };

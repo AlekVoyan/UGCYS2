@@ -1,5 +1,5 @@
-import type { Handler, HandlerContext, HandlerResponse } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
+import type { Handler, HandlerContext, HandlerResponse, HandlerEvent } from "@netlify/functions";
+import { getStore, connectLambda } from "@netlify/blobs";
 import { v4 as uuidv4 } from 'uuid';
 
 // FIX: Refactored to return HandlerResponse objects instead of native Response to align with the Handler type.
@@ -11,7 +11,10 @@ const jsonResponse = (status: number, body: object): HandlerResponse => {
     };
 };
 
-const handler: Handler = async (event, context: HandlerContext) => {
+const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
+    // FIX: Cast `event` to `any` to resolve a type mismatch between `HandlerEvent` and `connectLambda`'s expected `LambdaEvent` type.
+    connectLambda(event as any);
+
     if (event.httpMethod !== 'POST') {
         return jsonResponse(405, { message: 'Method Not Allowed' });
     }

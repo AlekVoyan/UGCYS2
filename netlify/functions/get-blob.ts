@@ -1,9 +1,12 @@
 // FIX: Refactored to return HandlerResponse objects instead of native Response to align with the Handler type.
 import type { Handler, HandlerEvent } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
+import { getStore, connectLambda } from "@netlify/blobs";
 import { Buffer } from "buffer";
 
 const handler: Handler = async (event: HandlerEvent) => {
+  // FIX: Cast `event` to `any` to resolve a type mismatch between `HandlerEvent` and `connectLambda`'s expected `LambdaEvent` type.
+  connectLambda(event as any);
+  
   const key = event.queryStringParameters?.key;
 
   if (!key) {

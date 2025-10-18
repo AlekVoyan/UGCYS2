@@ -181,7 +181,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
   }, [isMobileMenuOpen]);
 
 
-  const handleSave = async () => {
+  const handleSave = async (contentToSave: SiteContent = editableContent) => {
     setSaveStatus('saving');
     try {
       const user = window.netlifyIdentity?.currentUser();
@@ -195,7 +195,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
         headers: {
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(editableContent, null, 2)
+        body: JSON.stringify(contentToSave, null, 2)
       });
 
       if (!response.ok) {
@@ -213,7 +213,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
         throw new Error(errorMessage);
       }
       
-      updateContent(editableContent);
+      updateContent(contentToSave);
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 2000);
 
@@ -246,8 +246,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
       setSearchTerms(prev => ({ ...prev, [section]: value }));
   };
 
-  const handleFieldChange = (path: (string | number)[], value: any) => {
-    setEditableContent(set(editableContent, path, value));
+  const handleFieldChange = (path: (string | number)[], value: any, options = { shouldSave: false }) => {
+    const newContent = set(editableContent, path, value);
+    setEditableContent(newContent);
+    if (options.shouldSave) {
+        handleSave(newContent);
+    }
   };
 
   const toggleAccordion = (id: string) => {
@@ -307,7 +311,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
     
     const currentArray = (editableContent as any)[type];
     const newArray = currentArray.filter((_: any, i: number) => i !== index);
-    setEditableContent({ ...editableContent, [type]: newArray });
+    const newContent = { ...editableContent, [type]: newArray };
+    setEditableContent(newContent);
+    await handleSave(newContent);
   };
 
 
@@ -345,10 +351,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
     const newPhotos = results.filter((p): p is PhotoData => p !== null);
   
     if (newPhotos.length > 0) {
-      setEditableContent(prev => ({
-        ...prev,
-        photosData: [...newPhotos, ...prev.photosData],
-      }));
+      const newContent = {
+        ...editableContent,
+        photosData: [...newPhotos, ...editableContent.photosData],
+      };
+      setEditableContent(newContent);
+      await handleSave(newContent);
     }
     setUploadingFiles([]);
   };
@@ -494,7 +502,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ content, updateContent, on
                 <h1>{activeSection.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h1>
                 <div className="admin-header-actions">
                     <button onClick={onLogout} className="button button-secondary">Logout</button>
-                    <button onClick={handleSave} className={getSaveButtonClass()} disabled={saveStatus === 'saving'}>
+                    <button onClick={() => handleSave()} className={getSaveButtonClass()} disabled={saveStatus === 'saving'}>
                         {getSaveButtonText()}
                     </button>
                 </div>
@@ -710,7 +718,7 @@ const CaseStudyForm = ({ item, index, onChange }: { item: CaseStudyData, index: 
     );
 };
 
-const BlogPostForm = ({ item, index, onChange }: { item: BlogPost, index: number, onChange: (path: any[], val: any) => void }) => {
+const BlogPostForm = ({ item, index, onChange }: { item: BlogPost, index: number, onChange: (path: any[], val: any, options?: { shouldSave: boolean }) => void }) => {
     const blogPostFileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -729,7 +737,7 @@ const BlogPostForm = ({ item, index, onChange }: { item: BlogPost, index: number
             const resizedDataUrl = await resizeImage(file);
             const imageBlob = dataURLtoBlob(resizedDataUrl);
             const { key } = await uploadFile(imageBlob, file.name);
-            onChange(['blogPosts', index, 'featuredImage'], key);
+            onChange(['blogPosts', index, 'featuredImage'], key, { shouldSave: true });
 
         } catch (error) {
             console.error("Image processing failed:", error);
@@ -762,7 +770,7 @@ const BlogPostForm = ({ item, index, onChange }: { item: BlogPost, index: number
             });
             if (!response.ok) throw new Error("Failed to delete from blob storage.");
 
-            onChange(['blogPosts', index, 'featuredImage'], '');
+            onChange(['blogPosts', index, 'featuredImage'], '', { shouldSave: true });
         } catch (error) {
             console.error("Failed to delete blob:", error);
             alert("Could not delete image from storage. Please try again.");
@@ -845,7 +853,7 @@ const PhotoEditor = ({ photos, onUploadClick, onDelete, dragItem, dragOverItem, 
 const assetLabels: { [key: string]: { label: string; type: 'image' | 'video', tip: string } } = {
   heroBackgroundVideo: { label: 'Homepage Hero Background', type: 'video', tip: '1920x1080 (16:9). Keep file size small (<20MB) for fast loading.' },
   homeIntroImage: { label: 'Homepage Intro Section Image', type: 'image', tip: 'Recommended: Portrait orientation, optimized JPEG < 500KB.' },
-  aboutHeroImage: { label: 'About Page Hero Image', type: 'image', tip: 'Recommended: Portrait orientation, optimized PNG for transparency if needed.' },
+  aboutHeroImage: { label: 'About Page Hero Image', type: 'image', tip: 'Recommended: Portrait or square, optimized PNG for transparency if needed.' },
   aboutAcademicImage: { label: 'About Page "Academic Edge" Image', type: 'image', tip: 'Recommended: Landscape (4:5 ratio), optimized JPEG < 600KB.' },
   contactVisualImage: { label: 'Contact Page Visual', type: 'image', tip: 'Recommended: Portrait or square, optimized JPEG < 500KB.' },
 };
@@ -877,7 +885,7 @@ const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingStat
             }
 
             const { key: newKey } = await uploadFile(blobToUpload, file.name);
-            onChange(['siteSingletonAssets', key], newKey);
+            onChange(['siteSingletonAssets', key], newKey, { shouldSave: true });
 
         } catch (error) {
             console.error(`Upload failed for ${key}:`, error);
@@ -898,6 +906,22 @@ const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingStat
                     const { label, type, tip } = assetLabels[key];
                     const src = assets[key];
                     const isUploading = uploadingStates[key];
+
+                    if (key === 'heroBackgroundVideo') {
+                        return (
+                            <div key={key} className="visual-card static-asset-card">
+                                <h4>{label} <Tooltip text={tip} /></h4>
+                                <div className="visual-preview">
+                                    <video src={getMediaUrl(src)} muted autoPlay loop playsInline key={src}/>
+                                </div>
+                                <div className="static-asset-notice">
+                                    <p><strong>This is a core site asset.</strong> To ensure optimal performance and streaming, this video must be managed directly in the project's Git repository.</p>
+                                    <p>Update the file at:</p>
+                                    <code>public{src}</code>
+                                </div>
+                            </div>
+                        );
+                    }
 
                     return (
                         <div key={key} className="visual-card">
@@ -936,7 +960,7 @@ const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingStat
     );
 };
 
-const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC, index: number, onChange: (path: any[], val: any) => void }) => {
+const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC, index: number, onChange: (path: any[], val: any, options?: { shouldSave: boolean }) => void }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -953,7 +977,7 @@ const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC,
         setIsUploading(true);
         try {
             const { key } = await uploadFile(file, file.name);
-            onChange(['featuredWorkDataUGC', index, 'videoSrc'], key);
+            onChange(['featuredWorkDataUGC', index, 'videoSrc'], key, { shouldSave: true });
 
         } catch (error) {
             console.error("Video upload failed:", error);
@@ -995,7 +1019,7 @@ const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC,
     );
 };
 
-const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: number, onChange: (path: any[], val: any) => void }) => {
+const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: number, onChange: (path: any[], val: any, options?: { shouldSave: boolean }) => void }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -1012,7 +1036,7 @@ const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: 
         setIsUploading(true);
         try {
             const { key } = await uploadFile(file, file.name);
-            onChange(['powerCardsData', index, 'videoSrc'], key);
+            onChange(['powerCardsData', index, 'videoSrc'], key, { shouldSave: true });
         } catch (error) {
             console.error("Video upload failed:", error);
             alert("Failed to upload video. Please try again.");
@@ -1043,7 +1067,7 @@ const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: 
     );
 };
 
-const TrustedByLogosEditor = ({ logos, onAdd, onDelete, onChange }: { logos: TrustedByLogo[], onAdd: () => void, onDelete: (index: number) => void, onChange: (path: any[], val: any) => void }) => {
+const TrustedByLogosEditor = ({ logos, onAdd, onDelete, onChange }: { logos: TrustedByLogo[], onAdd: () => void, onDelete: (index: number) => void, onChange: (path: any[], val: any, options?: { shouldSave: boolean }) => void }) => {
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
 
@@ -1085,7 +1109,7 @@ const TrustedByLogosEditor = ({ logos, onAdd, onDelete, onChange }: { logos: Tru
     );
 };
 
-const LogoCard = ({ logo, index, onDelete, onChange, ...dragProps }: { logo: TrustedByLogo, index: number, onDelete: () => void, onChange: (path: any[], val: any) => void, [key: string]: any }) => {
+const LogoCard = ({ logo, index, onDelete, onChange, ...dragProps }: { logo: TrustedByLogo, index: number, onDelete: () => void, onChange: (path: any[], val: any, options?: { shouldSave: boolean }) => void, [key: string]: any }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -1104,7 +1128,7 @@ const LogoCard = ({ logo, index, onDelete, onChange, ...dragProps }: { logo: Tru
             const resizedDataUrl = await resizeImage(file);
             const imageBlob = dataURLtoBlob(resizedDataUrl);
             const { key } = await uploadFile(imageBlob, file.name);
-            onChange(['trustedByLogos', index, 'src'], key);
+            onChange(['trustedByLogos', index, 'src'], key, { shouldSave: true });
         } catch (error) {
             console.error("Image upload failed:", error);
             alert("Failed to upload image.");

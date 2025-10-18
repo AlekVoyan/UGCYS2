@@ -37,13 +37,10 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         const buffer = Buffer.from(fileData, 'base64');
         
         const store = getStore("uploads");
-        // FIX: The `store.set` method expects an ArrayBuffer, but `Buffer.from` returns a Buffer.
-        // Convert the Buffer to an ArrayBuffer to match the required type.
-        // The slice is used to safely get the correct segment of the underlying ArrayBuffer.
-        const arrayBuffer = buffer.buffer.slice(
-            buffer.byteOffset,
-            buffer.byteOffset + buffer.byteLength
-        );
+        // Fix: The `store.set` method expects a plain `ArrayBuffer`. A Node.js `Buffer` can be backed by a
+        // `SharedArrayBuffer`, which is not a valid `BlobInput`. To prevent a type error, this creates a new
+        // `Uint8Array` from the buffer, which copies the data and ensures the underlying buffer is a plain `ArrayBuffer`.
+        const arrayBuffer = new Uint8Array(buffer).buffer;
         await store.set(key, arrayBuffer, { metadata: { mimeType } });
 
         return jsonResponse(200, { key });

@@ -188,7 +188,10 @@ const App = () => {
 
       const response = await fetch('/.netlify/functions/saveContent', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify(editableContent, null, 2)
       });
 

@@ -1,459 +1,279 @@
 {
-  "trustedByLogos": [
-    {
-      "src": "/assets/logos/logo1.png",
-      "alt": "Brand Logo 1",
-      "url": "#"
-    },
-    {
-      "src": "/assets/logos/logo2.png",
-      "alt": "Brand Logo 2",
-      "url": "#"
-    },
-    {
-      "src": "/assets/logos/logo3.png",
-      "alt": "Brand Logo 3",
-      "url": "#"
-    },
-    {
-      "src": "/assets/logos/logo4.png",
-      "alt": "Brand Logo 4",
-      "url": "#"
-    },
-    {
-      "src": "/assets/logos/logo5.png",
-      "alt": "Brand Logo 5",
-      "url": "#"
-    },
-    {
-      "src": "/assets/logos/logo6.png",
-      "alt": "Brand Logo 6",
-      "url": "#"
-    },
-    {
-      "src": "/assets/logos/logo7.png",
-      "alt": "Brand Logo 7",
-      "url": "#"
-    }
-  ],
-  "featuredWorkDataUGC": [
-    {
-      "id": 1,
-      "username": "@glowup_cosmetics",
-      "description": "That feeling when the new serum drops ✨ #glowup #skincare #ugc",
-      "likes": "1.2M",
-      "comments": "4,582",
-      "videoSrc": "/assets/videos/ugc-video-1.mp4"
-    },
-    {
-      "id": 2,
-      "username": "@nomad_tech_official",
-      "description": "My new WFH setup is a game-changer thanks to this! #techtok #wfh #gadgets",
-      "likes": "875K",
-      "comments": "2,133",
-      "videoSrc": "/assets/videos/ugc-video-2.mp4"
-    },
-    {
-      "id": 3,
-      "username": "@ethereal.fashion",
-      "description": "POV: you found the perfect dress for golden hour ☀️ #fashionfinds #ootd #ugccreator",
-      "likes": "2.1M",
-      "comments": "9,821",
-      "videoSrc": "/assets/videos/ugc-video-3.mp4"
-    },
-    {
-      "id": 4,
-      "username": "@wanderlust_bags",
-      "description": "Ready for the next adventure. Where should we go next? #travel #adventure #explore",
-      "likes": "560K",
-      "comments": "1,890",
-      "videoSrc": "/assets/videos/ugc-video-4.mp4"
-    },
-    {
-      "id": 5,
-      "username": "@fresh_juices",
-      "description": "Starting the day right with this boost of energy! 🍓 #healthy #juice #morningroutine",
-      "likes": "430K",
-      "comments": "1,204",
-      "videoSrc": "/assets/videos/ugc-video-5.mp4"
-    },
-    {
-      "id": 6,
-      "username": "@summit_activewear",
-      "description": "Testing the new collection on a morning run. It passed the vibe check! #activewear #running #fitness",
-      "likes": "990K",
-      "comments": "3,451",
-      "videoSrc": "/assets/videos/ugc-video-6.mp4"
-    },
-    {
-      "id": 7,
-      "username": "@artisan_coffee",
-      "description": "The perfect pour. My morning ritual is sacred. ☕️ #coffee #coffeetiktok #asmr",
-      "likes": "1.8M",
-      "comments": "6,732",
-      "videoSrc": "/assets/videos/ugc-video-7.mp4"
-    }
-  ],
-  "caseStudiesData": [
-    {
-      "type": "standard",
-      "brand": "GlowUp Cosmetics",
-      "title": "Viral Success",
-      "goal": "Generate maximum brand awareness and desire for a new Vitamin C serum on TikTok & Instagram.",
-      "results": [
+    "trustedByLogos": [
+        { "src": "/assets/logos/logo1.png", "alt": "Brand Logo 1", "url": "#" },
+        { "src": "/assets/logos/logo2.png", "alt": "Brand Logo 2", "url": "#" },
+        { "src": "/assets/logos/logo3.png", "alt": "Brand Logo 3", "url": "#" },
+        { "src": "/assets/logos/logo4.png", "alt": "Brand Logo 4", "url": "#" },
+        { "src": "/assets/logos/logo5.png", "alt": "Brand Logo 5", "url": "#" },
+        { "src": "/assets/logos/logo6.png", "alt": "Brand Logo 6", "url": "#" },
+        { "src": "/assets/logos/logo7.png", "alt": "Brand Logo 7", "url": "#" }
+    ],
+    "featuredWorkDataUGC": [
         {
-          "value": "1.2M",
-          "label": "organic views"
+            "id": 1,
+            "username": "@glowup_cosmetics",
+            "description": "That feeling when the new serum drops ✨ #glowup #skincare #ugc",
+            "likes": "1.2M",
+            "comments": "4,582",
+            "videoSrc": "/assets/videos/ugc-video-1.mp4"
         },
         {
-          "value": "300%",
-          "label": "sales uplift"
+            "id": 2,
+            "username": "@nomad_tech_official",
+            "description": "My new WFH setup is a game-changer thanks to this! #techtok #wfh #gadgets",
+            "likes": "875K",
+            "comments": "2,133",
+            "videoSrc": "/assets/videos/ugc-video-2.mp4"
+        },
+        {
+            "id": 3,
+            "username": "@ethereal.fashion",
+            "description": "POV: you found the perfect dress for golden hour ☀️ #fashionfinds #ootd #ugccreator",
+            "likes": "2.1M",
+            "comments": "9,821",
+            "videoSrc": "/assets/videos/ugc-video-3.mp4"
+        },
+        {
+            "id": 4,
+            "username": "@wanderlust_bags",
+            "description": "Ready for the next adventure. Where should we go next? #travel #adventure #explore",
+            "likes": "560K",
+            "comments": "1,890",
+            "videoSrc": "/assets/videos/ugc-video-4.mp4"
+        },
+        {
+            "id": 5,
+            "username": "@fresh_juices",
+            "description": "Starting the day right with this boost of energy! 🍓 #healthy #juice #morningroutine",
+            "likes": "430K",
+            "comments": "1,204",
+            "videoSrc": "/assets/videos/ugc-video-5.mp4"
+        },
+        {
+            "id": 6,
+            "username": "@summit_activewear",
+            "description": "Testing the new collection on a morning run. It passed the vibe check! #activewear #running #fitness",
+            "likes": "990K",
+            "comments": "3,451",
+            "videoSrc": "/assets/videos/ugc-video-6.mp4"
+        },
+        {
+            "id": 7,
+            "username": "@artisan_coffee",
+            "description": "The perfect pour. My morning ritual is sacred. ☕️ #coffee #coffeetiktok #asmr",
+            "likes": "1.8M",
+            "comments": "6,732",
+            "videoSrc": "/assets/videos/ugc-video-7.mp4"
         }
-      ],
-      "name": "Viral Success Story for GlowUp Cosmetics",
-      "description": "A UGC campaign that generated over 1.2 million organic views for GlowUp Cosmetics' new Vitamin C serum, resulting in a 300% sales uplift.",
-      "thumbnailUrl": "https://img.youtube.com/vi/g3y32P2J-fg/maxresdefault.jpg",
-      "uploadDate": "2024-05-10T08:00:00+00:00",
-      "duration": "PT0M28S",
-      "embedUrl": "https://www.youtube.com/embed/g3y32P2J-fg",
-      "interactionStatistic": {
-        "@type": "InteractionCounter",
-        "interactionType": {
-          "@type": "WatchAction"
-        },
-        "userInteractionCount": 1200000
+    ],
+    "caseStudiesData": [
+      {
+        "type": "standard",
+        "brand": "GlowUp Cosmetics",
+        "title": "Viral Success",
+        "goal": "Generate maximum brand awareness and desire for a new Vitamin C serum on TikTok & Instagram.",
+        "results": [
+          { "value": "1.2M", "label": "organic views" },
+          { "value": "300%", "label": "sales uplift" }
+        ],
+        "name": "Viral Success Story for GlowUp Cosmetics",
+        "description": "A UGC campaign that generated over 1.2 million organic views for GlowUp Cosmetics' new Vitamin C serum, resulting in a 300% sales uplift.",
+        "thumbnailUrl": "https://img.youtube.com/vi/g3y32P2J-fg/maxresdefault.jpg",
+        "uploadDate": "2024-05-10T08:00:00+00:00",
+        "duration": "PT0M28S",
+        "embedUrl": "https://www.youtube.com/embed/g3y32P2J-fg",
+        "interactionStatistic": {
+          "@type": "InteractionCounter",
+          "interactionType": { "@type": "WatchAction" },
+          "userInteractionCount": 1200000
+        }
+      },
+      {
+        "type": "standard",
+        "brand": "Nomad Tech",
+        "title": "Conversion Boost",
+        "goal": "Lower Cost Per Acquisition (CPA) and increase Return On Ad Spend (ROAS) for a Meta ad campaign.",
+        "results": [
+          { "value": "3.5x", "label": "ROAS" },
+          { "value": "-40%", "label": "CPA" }
+        ],
+        "name": "Nomad Tech Ad Campaign: Conversion Boost",
+        "description": "Performance-driven UGC video created for a Meta ad campaign that achieved 3.5x ROAS and lowered CPA by 40% for Nomad Tech.",
+        "thumbnailUrl": "https://img.youtube.com/vi/5z8aT_T-s5c/maxresdefault.jpg",
+        "uploadDate": "2024-04-15T09:00:00+00:00",
+        "duration": "PT0M22S",
+        "embedUrl": "https://www.youtube.com/embed/5z8aT_T-s5c"
+      },
+      {
+        "type": "phone-carousel",
+        "title": "Brand Story Showcase",
+        "items": [
+          {
+            "brand": "Ethereal Fashion",
+            "goal": "Increase brand affinity and engagement through authentic, story-driven vertical video content.",
+            "results": [
+              { "value": "+25k", "label": "followers" },
+              { "value": "18%", "label": "engagement rate" }
+            ],
+            "name": "Ethereal Fashion Brand Story",
+            "description": "Authentic, story-driven vertical video content that increased brand affinity and grew Ethereal Fashion's follower count by over 25k.",
+            "thumbnailUrl": "https://img.youtube.com/vi/4224x8-p_gM/maxresdefault.jpg",
+            "uploadDate": "2024-03-20T10:00:00+00:00",
+            "duration": "PT0M15S",
+            "embedUrl": "https://www.youtube.com/embed/4224x8-p_gM"
+          },
+          {
+            "brand": "Wanderlust Bags",
+            "goal": "Create an emotional connection with the audience by showcasing the product in a travel narrative.",
+            "results": [
+              { "value": "2.1M", "label": "organic views" },
+              { "value": "35k+", "label": "new followers" }
+            ],
+            "name": "Wanderlust Bags Travel Story",
+            "description": "A short film style UGC that captured the essence of adventure, leading to viral reach on Instagram Reels.",
+            "thumbnailUrl": "https://i.ytimg.com/vi/vC0ig-iM8o0/maxresdefault.jpg",
+            "uploadDate": "2024-07-01T10:00:00+00:00",
+            "duration": "PT0M35S",
+            "embedUrl": "https://www.youtube.com/embed/vC0ig-iM8o0"
+          },
+          {
+            "brand": "Artisan Coffee Co.",
+            "goal": "Showcase the morning ritual and craftsmanship behind the brand to build a loyal community.",
+            "results": [
+              { "value": "30%", "label": "repeat customers" },
+              { "value": "22%", "label": "engagement rate" }
+            ],
+            "name": "Artisan Coffee Co. Morning Ritual",
+            "description": "An aesthetic 'day in the life' video that resonated deeply with the target audience, boosting loyalty.",
+            "thumbnailUrl": "https://i.ytimg.com/vi/3-M1xK_GRiI/maxresdefault.jpg",
+            "uploadDate": "2024-06-15T10:00:00+00:00",
+            "duration": "PT0M19S",
+            "embedUrl": "https://www.youtube.com/embed/3-M1xK_GRiI"
+          }
+        ]
+      },
+      {
+        "type": "standard",
+        "brand": "SipFresh Juices",
+        "title": "Product Launch",
+        "goal": "Drive initial sales and social proof for a new line of organic cold-pressed juices.",
+        "results": [
+          { "value": "5k+", "label": "units sold in week 1" },
+          { "value": "22%", "label": "conversion rate" }
+        ],
+        "name": "SipFresh Juices Product Launch Campaign",
+        "description": "A multi-platform UGC campaign to launch a new line of juices, resulting in over 5,000 units sold in the first week.",
+        "thumbnailUrl": "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+        "uploadDate": "2024-06-01T08:00:00+00:00",
+        "duration": "PT0M18S",
+        "embedUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ"
+      },
+      {
+        "type": "phone",
+        "brand": "Summit Active",
+        "title": "Community Engagement",
+        "goal": "Build an engaged community around a new line of sustainable activewear.",
+        "results": [
+          { "value": "400%", "label": "increase in shares" },
+          { "value": "+15k", "label": "new followers" }
+        ],
+        "name": "Summit Active Community Engagement Initiative",
+        "description": "Vertical video campaign focused on user participation which quadrupled content shares and grew the brand's following by 15,000.",
+        "thumbnailUrl": "https://img.youtube.com/vi/3h_e8ig42-s/maxresdefault.jpg",
+        "uploadDate": "2024-05-25T10:00:00+00:00",
+        "duration": "PT0M25S",
+        "embedUrl": "https://www.youtube.com/embed/3h_e8ig42-s"
       }
-    },
-    {
-      "type": "standard",
-      "brand": "Nomad Tech",
-      "title": "Conversion Boost",
-      "goal": "Lower Cost Per Acquisition (CPA) and increase Return On Ad Spend (ROAS) for a Meta ad campaign.",
-      "results": [
+    ],
+    "photosData": [
+      { "src": "/assets/images/photo-1.jpg", "alt": "A professional headshot of Olesya in a studio setting.", "name": "Studio Headshot" },
+      { "src": "/assets/images/photo-2.jpg", "alt": "Olesya demonstrating a skincare product in a lifestyle setting.", "name": "Skincare Product Demo" },
+      { "src": "/assets/images/photo-3.jpg", "alt": "A fashion shot of Olesya wearing a summer dress.", "name": "Summer Fashion Shot" },
+      { "src": "/assets/images/photo-4.jpg", "alt": "Olesya interacting with a tech gadget.", "name": "Tech Gadget Interaction" },
+      { "src": "/assets/images/photo-5.jpg", "alt": "A wellness-themed photo of Olesya doing yoga.", "name": "Wellness Lifestyle" },
+      { "src": "/assets/images/photo-6.jpg", "alt": "Close-up beauty shot showcasing makeup.", "name": "Beauty Close-up" },
+      { "src": "/assets/images/photo-7.jpg", "alt": "Olesya in an urban environment for a fashion campaign.", "name": "Urban Fashion Campaign" },
+      { "src": "/assets/images/photo-8.jpg", "alt": "Candid lifestyle photo with a coffee product.", "name": "Coffee Lifestyle" },
+      { "src": "/assets/images/photo-9.jpg", "alt": "Activewear photo of Olesya.", "name": "Activewear In Action" },
+      { "src": "/assets/images/photo-10.jpg", "alt": "Another professional headshot with different lighting.", "name": "Creative Headshot" },
+      { "src": "/assets/images/photo-11.jpg", "alt": "Olesya using a laptop in a modern co-working space.", "name": "Remote Work Vibe" },
+      { "src": "/assets/images/photo-12.jpg", "alt": "Close up on hands holding a beauty product.", "name": "Product Texture Shot" },
+      { "src": "/assets/images/photo-13.jpg", "alt": "Full body fashion shot in a minimalist setting.", "name": "Minimalist Fashion" },
+      { "src": "/assets/images/photo-14.jpg", "alt": "Olesya smiling genuinely while holding a beverage.", "name": "Beverage UGC" },
+      { "src": "/assets/images/photo-15.jpg", "alt": "Unboxing a new tech product with excitement.", "name": "Tech Unboxing" },
+      { "src": "/assets/images/photo-16.jpg", "alt": "Autumn-themed fashion photo in a park.", "name": "Autumn Fashion" },
+      { "src": "/assets/images/photo-17.jpg", "alt": "Applying a face mask for a skincare brand.", "name": "Skincare Application" },
+      { "src": "/assets/images/photo-18.jpg", "alt": "A flat lay of various products on a clean background.", "name": "Product Flat Lay" },
+      { "src": "/assets/images/photo-19.jpg", "alt": "Olesya laughing while using a mobile app.", "name": "App Usage Lifestyle" },
+      { "src": "/assets/images/photo-20.jpg", "alt": "A travel-themed photo with a backpack.", "name": "Travel UGC" },
+      { "src": "/assets/images/photo-21.jpg", "alt": "Close-up of hair to showcase a hair care product.", "name": "Hair Care Demo" }
+    ],
+    "blogPosts": [
+      {
+        "slug": "tiktok-ads-not-converting",
+        "title": "5 Reasons Your TikTok Ads Aren't Converting (And How to Fix It With UGC)",
+        "category": "Strategy",
+        "excerpt": "Dive deep into the common pitfalls of TikTok advertising and discover how authentic User-Generated Content can skyrocket your conversion rates.",
+        "fullContent": "It's a common frustration for brands: you're pouring money into TikTok ads, but the return on investment just isn't there. The clicks are low, the engagement is minimal, and most importantly, the sales aren't happening. The truth is, traditional advertising logic often fails on a platform built for authenticity. TikTok users can spot a polished, corporate ad from a mile away and will scroll right past it.\nThis is where User-Generated Content (UGC) becomes a game-changer. UGC isn't just a trend; it's a fundamental shift in how brands communicate. It leverages real customers and creators to build trust and relatability that a slick studio ad never can. In this post, we'll break down the five most common reasons your TikTok ads are falling flat and provide actionable steps to fix them using a performance-driven UGC strategy.",
+        "featuredImage": "/assets/images/tiktok-ads-not-converting.jpg"
+      },
+      {
+        "slug": "ugc-vs-influencer-marketing-2025",
+        "title": "UGC vs. Influencer Marketing: Which is Better for Your 2025 Budget?",
+        "category": "Analysis",
+        "excerpt": "A comprehensive breakdown of the pros, cons, and costs associated with UGC and influencer marketing to help you make the smartest investment.",
+        "fullContent": "As marketing budgets for 2025 are being planned, a critical question arises: where should you allocate your resources for the best results on social media? Two powerhouses dominate the conversation: User-Generated Content (UGC) and traditional Influencer Marketing. While they may seem similar, their strategic applications, costs, and outcomes can be vastly different.\nInfluencer marketing relies on the reach and authority of a single, established personality. UGC, on the other hand, is a volume game, relying on the authenticity and relatability of many everyday creators. This article will dissect both approaches, comparing their impact on brand trust, conversion rates, content scalability, and overall budget efficiency to help you decide which strategy—or which blend of the two—will drive the most growth for your brand in the coming year.",
+        "featuredImage": "/assets/images/ugc-vs-influencer-marketing-2025.jpg"
+      },
+      {
+        "slug": "how-to-write-ugc-brief",
+        "title": "How to Write a UGC Brief That Gets You Amazing Results",
+        "category": "How-To",
+        "excerpt": "My personal template and guide to crafting the perfect UGC brief that leaves no room for error and empowers creators to deliver excellence.",
+        "fullContent": "The secret to consistently great UGC is not just finding talented creators; it's providing them with a crystal-clear brief. A well-crafted brief is the blueprint for success. It eliminates guesswork, minimizes the need for revisions, and empowers the creator to produce content that is both authentic to their style and perfectly aligned with your campaign goals.\nMany brands make the mistake of being either too restrictive, stifling creativity, or too vague, leading to off-brand content. The key is to find the perfect balance. In this guide, I'm sharing my personal template for a UGC brief that has been refined over hundreds of successful brand collaborations. We will cover essential elements like defining the 'hook,' key messaging points, calls-to-action, and the 'dos and don'ts' that ensure you get exactly the content you need, every single time.",
+        "featuredImage": "/assets/images/how-to-write-ugc-brief.jpg"
+      },
+      {
+        "slug": "psychology-of-scroll-stopping-video",
+        "title": "The Psychology of a Scroll-Stopping Video: My Acting Secrets",
+        "category": "Expertise",
+        "excerpt": "Learn the performance techniques I use to create high-retention videos that capture attention in the first three seconds.",
+        "fullContent": "In the fast-paced world of vertical video, you have less than three seconds to earn a viewer's attention. If you don't hook them immediately, they're gone. As a professionally trained actress, I don't just point and shoot; I apply principles of performance psychology to every video I create. It's about more than just showing a product; it's about conveying an emotion, telling a micro-story, and creating an immediate connection with the viewer.\nThis article pulls back the curtain on my process. I'll share techniques related to pacing, vocal intonation, non-verbal cues, and character archetypes that can be applied to UGC to make it more engaging and persuasive. You'll learn how to structure a video for maximum emotional impact and retention, turning a simple product feature into a must-watch piece of content.",
+        "featuredImage": "/assets/images/psychology-of-scroll-stopping-video.jpg"
+      }
+    ],
+    "powerCardsData": [
         {
-          "value": "3.5x",
-          "label": "ROAS"
+          "title": "Professional Videographer",
+          "description": "Ensuring every shot is cinematic, stable, and perfectly lit to meet campaign standards.",
+          "videoSrc": "/assets/videos/videographer-preview.mp4"
         },
         {
-          "value": "-40%",
-          "label": "CPA"
+          "title": "Skilled Editor",
+          "description": "Crafting a dynamic final cut with crisp sound design, color grading, and engaging pacing.",
+          "videoSrc": "/assets/videos/editor-preview.mp4"
+        },
+        {
+          "title": "High-End Equipment",
+          "description": "We shoot on cinema cameras and use a full studio lighting and sound setup for superior quality.",
+          "videoSrc": "/assets/videos/equipment-preview.mp4"
         }
-      ],
-      "name": "Nomad Tech Ad Campaign: Conversion Boost",
-      "description": "Performance-driven UGC video created for a Meta ad campaign that achieved 3.5x ROAS and lowered CPA by 40% for Nomad Tech.",
-      "thumbnailUrl": "https://img.youtube.com/vi/5z8aT_T-s5c/maxresdefault.jpg",
-      "uploadDate": "2024-04-15T09:00:00+00:00",
-      "duration": "PT0M22S",
-      "embedUrl": "https://www.youtube.com/embed/5z8aT_T-s5c"
-    },
-    {
-      "type": "phone-carousel",
-      "title": "Brand Story Showcase",
-      "items": [
-        {
-          "brand": "Ethereal Fashion",
-          "goal": "Increase brand affinity and engagement through authentic, story-driven vertical video content.",
-          "results": [
-            {
-              "value": "+25k",
-              "label": "followers"
-            },
-            {
-              "value": "18%",
-              "label": "engagement rate"
-            }
-          ],
-          "name": "Ethereal Fashion Brand Story",
-          "description": "Authentic, story-driven vertical video content that increased brand affinity and grew Ethereal Fashion's follower count by over 25k.",
-          "thumbnailUrl": "https://img.youtube.com/vi/4224x8-p_gM/maxresdefault.jpg",
-          "uploadDate": "2024-03-20T10:00:00+00:00",
-          "duration": "PT0M15S",
-          "embedUrl": "https://www.youtube.com/embed/4224x8-p_gM"
-        },
-        {
-          "brand": "Wanderlust Bags",
-          "goal": "Create an emotional connection with the audience by showcasing the product in a travel narrative.",
-          "results": [
-            {
-              "value": "2.1M",
-              "label": "organic views"
-            },
-            {
-              "value": "35k+",
-              "label": "new followers"
-            }
-          ],
-          "name": "Wanderlust Bags Travel Story",
-          "description": "A short film style UGC that captured the essence of adventure, leading to viral reach on Instagram Reels.",
-          "thumbnailUrl": "https://i.ytimg.com/vi/vC0ig-iM8o0/maxresdefault.jpg",
-          "uploadDate": "2024-07-01T10:00:00+00:00",
-          "duration": "PT0M35S",
-          "embedUrl": "https://www.youtube.com/embed/vC0ig-iM8o0"
-        },
-        {
-          "brand": "Artisan Coffee Co.",
-          "goal": "Showcase the morning ritual and craftsmanship behind the brand to build a loyal community.",
-          "results": [
-            {
-              "value": "30%",
-              "label": "repeat customers"
-            },
-            {
-              "value": "22%",
-              "label": "engagement rate"
-            }
-          ],
-          "name": "Artisan Coffee Co. Morning Ritual",
-          "description": "An aesthetic 'day in the life' video that resonated deeply with the target audience, boosting loyalty.",
-          "thumbnailUrl": "https://i.ytimg.com/vi/3-M1xK_GRiI/maxresdefault.jpg",
-          "uploadDate": "2024-06-15T10:00:00+00:00",
-          "duration": "PT0M19S",
-          "embedUrl": "https://www.youtube.com/embed/3-M1xK_GRiI"
-        }
-      ]
-    },
-    {
-      "type": "standard",
-      "brand": "SipFresh Juices",
-      "title": "Product Launch",
-      "goal": "Drive initial sales and social proof for a new line of organic cold-pressed juices.",
-      "results": [
-        {
-          "value": "5k+",
-          "label": "units sold in week 1"
-        },
-        {
-          "value": "22%",
-          "label": "conversion rate"
-        }
-      ],
-      "name": "SipFresh Juices Product Launch Campaign",
-      "description": "A multi-platform UGC campaign to launch a new line of juices, resulting in over 5,000 units sold in the first week.",
-      "thumbnailUrl": "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-      "uploadDate": "2024-06-01T08:00:00+00:00",
-      "duration": "PT0M18S",
-      "embedUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ"
-    },
-    {
-      "type": "phone",
-      "brand": "Summit Active",
-      "title": "Community Engagement",
-      "goal": "Build an engaged community around a new line of sustainable activewear.",
-      "results": [
-        {
-          "value": "400%",
-          "label": "increase in shares"
-        },
-        {
-          "value": "+15k",
-          "label": "new followers"
-        }
-      ],
-      "name": "Summit Active Community Engagement Initiative",
-      "description": "Vertical video campaign focused on user participation which quadrupled content shares and grew the brand's following by 15,000.",
-      "thumbnailUrl": "https://img.youtube.com/vi/3h_e8ig42-s/maxresdefault.jpg",
-      "uploadDate": "2024-05-25T10:00:00+00:00",
-      "duration": "PT0M25S",
-      "embedUrl": "https://www.youtube.com/embed/3h_e8ig42-s"
+    ],
+    "keyStats": [
+        { "key": "Location", "value": "Budapest, Hungary" },
+        { "key": "Languages", "value": "English, Ukrainian, Russian" },
+        { "key": "Age", "value": "21" },
+        { "key": "Primary Niches", "value": "Skincare, Tech, Wellness" },
+        { "key": "Skin Type", "value": "Healthy, clear skin" },
+        { "key": "Hair Type", "value": "Dyed Blonde, Long" },
+        { "key": "Apparel Size", "value": "XXS-XS" },
+        { "key": "Pets", "value": "A dog is planned" }
+    ],
+    "siteSingletonAssets": {
+        "heroBackgroundVideo": "/assets/videos/hero-bg.mp4",
+        "homeIntroImage": "/assets/images/about-headshot.jpg",
+        "aboutHeroImage": "/assets/images/about-headshot.png",
+        "aboutAcademicImage": "/assets/images/academic-visual.jpg",
+        "contactVisualImage": "/assets/images/contact-visual.jpg"
     }
-  ],
-  "photosData": [
-    {
-      "src": "photo-1.jpg",
-      "alt": "A professional headshot of Olesya in a studio setting.",
-      "name": "Studio Headshot"
-    },
-    {
-      "src": "photo-2.jpg",
-      "alt": "Olesya demonstrating a skincare product in a lifestyle setting.",
-      "name": "Skincare Product Demo"
-    },
-    {
-      "src": "photo-3.jpg",
-      "alt": "A fashion shot of Olesya wearing a summer dress.",
-      "name": "Summer Fashion Shot"
-    },
-    {
-      "src": "photo-4.jpg",
-      "alt": "Olesya interacting with a tech gadget.",
-      "name": "Tech Gadget Interaction"
-    },
-    {
-      "src": "photo-5.jpg",
-      "alt": "A wellness-themed photo of Olesya doing yoga.",
-      "name": "Wellness Lifestyle"
-    },
-    {
-      "src": "photo-6.jpg",
-      "alt": "Close-up beauty shot showcasing makeup.",
-      "name": "Beauty Close-up"
-    },
-    {
-      "src": "photo-7.jpg",
-      "alt": "Olesya in an urban environment for a fashion campaign.",
-      "name": "Urban Fashion Campaign"
-    },
-    {
-      "src": "photo-8.jpg",
-      "alt": "Candid lifestyle photo with a coffee product.",
-      "name": "Coffee Lifestyle"
-    },
-    {
-      "src": "photo-9.jpg",
-      "alt": "Activewear photo of Olesya.",
-      "name": "Activewear In Action"
-    },
-    {
-      "src": "photo-10.jpg",
-      "alt": "Another professional headshot with different lighting.",
-      "name": "Creative Headshot"
-    },
-    {
-      "src": "photo-11.jpg",
-      "alt": "Olesya using a laptop in a modern co-working space.",
-      "name": "Remote Work Vibe"
-    },
-    {
-      "src": "photo-12.jpg",
-      "alt": "Close up on hands holding a beauty product.",
-      "name": "Product Texture Shot"
-    },
-    {
-      "src": "photo-13.jpg",
-      "alt": "Full body fashion shot in a minimalist setting.",
-      "name": "Minimalist Fashion"
-    },
-    {
-      "src": "photo-14.jpg",
-      "alt": "Olesya smiling genuinely while holding a beverage.",
-      "name": "Beverage UGC"
-    },
-    {
-      "src": "photo-15.jpg",
-      "alt": "Unboxing a new tech product with excitement.",
-      "name": "Tech Unboxing"
-    },
-    {
-      "src": "photo-16.jpg",
-      "alt": "Autumn-themed fashion photo in a park.",
-      "name": "Autumn Fashion"
-    },
-    {
-      "src": "photo-17.jpg",
-      "alt": "Applying a face mask for a skincare brand.",
-      "name": "Skincare Application"
-    },
-    {
-      "src": "photo-18.jpg",
-      "alt": "A flat lay of various products on a clean background.",
-      "name": "Product Flat Lay"
-    },
-    {
-      "src": "photo-19.jpg",
-      "alt": "Olesya laughing while using a mobile app.",
-      "name": "App Usage Lifestyle"
-    },
-    {
-      "src": "photo-20.jpg",
-      "alt": "A travel-themed photo with a backpack.",
-      "name": "Travel UGC"
-    },
-    {
-      "src": "photo-21.jpg",
-      "alt": "Close-up of hair to showcase a hair care product.",
-      "name": "Hair Care Demo"
-    }
-  ],
-  "blogPosts": [
-    {
-      "slug": "tiktok-ads-not-converting",
-      "title": "5 Reasons Your TikTok Ads Aren't Converting (And How to Fix It With UGC)",
-      "category": "Strategy",
-      "excerpt": "Dive deep into the common pitfalls of TikTok advertising and discover how authentic User-Generated Content can skyrocket your conversion rates.",
-      "fullContent": "It's a common frustration for brands: you're pouring money into TikTok ads, but the return on investment just isn't there. The clicks are low, the engagement is minimal, and most importantly, the sales aren't happening. The truth is, traditional advertising logic often fails on a platform built for authenticity. TikTok users can spot a polished, corporate ad from a mile away and will scroll right past it.\nThis is where User-Generated Content (UGC) becomes a game-changer. UGC isn't just a trend; it's a fundamental shift in how brands communicate. It leverages real customers and creators to build trust and relatability that a slick studio ad never can. In this post, we'll break down the five most common reasons your TikTok ads are falling flat and provide actionable steps to fix them using a performance-driven UGC strategy.",
-      "featuredImage": "/assets/images/tiktok-ads-not-converting.jpg"
-    },
-    {
-      "slug": "ugc-vs-influencer-marketing-2025",
-      "title": "UGC vs. Influencer Marketing: Which is Better for Your 2025 Budget?",
-      "category": "Analysis",
-      "excerpt": "A comprehensive breakdown of the pros, cons, and costs associated with UGC and influencer marketing to help you make the smartest investment.",
-      "fullContent": "As marketing budgets for 2025 are being planned, a critical question arises: where should you allocate your resources for the best results on social media? Two powerhouses dominate the conversation: User-Generated Content (UGC) and traditional Influencer Marketing. While they may seem similar, their strategic applications, costs, and outcomes can be vastly different.\nInfluencer marketing relies on the reach and authority of a single, established personality. UGC, on the other hand, is a volume game, relying on the authenticity and relatability of many everyday creators. This article will dissect both approaches, comparing their impact on brand trust, conversion rates, content scalability, and overall budget efficiency to help you decide which strategy—or which blend of the two—will drive the most growth for your brand in the coming year.",
-      "featuredImage": "/assets/images/ugc-vs-influencer-marketing-2025.jpg"
-    },
-    {
-      "slug": "how-to-write-ugc-brief",
-      "title": "How to Write a UGC Brief That Gets You Amazing Results",
-      "category": "How-To",
-      "excerpt": "My personal template and guide to crafting the perfect UGC brief that leaves no room for error and empowers creators to deliver excellence.",
-      "fullContent": "The secret to consistently great UGC is not just finding talented creators; it's providing them with a crystal-clear brief. A well-crafted brief is the blueprint for success. It eliminates guesswork, minimizes the need for revisions, and empowers the creator to produce content that is both authentic to their style and perfectly aligned with your campaign goals.\nMany brands make the mistake of being either too restrictive, stifling creativity, or too vague, leading to off-brand content. The key is to find the perfect balance. In this guide, I'm sharing my personal template for a UGC brief that has been refined over hundreds of successful brand collaborations. We will cover essential elements like defining the 'hook,' key messaging points, calls-to-action, and the 'dos and don'ts' that ensure you get exactly the content you need, every single time.",
-      "featuredImage": "/assets/images/how-to-write-ugc-brief.jpg"
-    },
-    {
-      "slug": "psychology-of-scroll-stopping-video",
-      "title": "The Psychology of a Scroll-Stopping Video: My Acting Secrets",
-      "category": "Expertise",
-      "excerpt": "Learn the performance techniques I use to create high-retention videos that capture attention in the first three seconds.",
-      "fullContent": "In the fast-paced world of vertical video, you have less than three seconds to earn a viewer's attention. If you don't hook them immediately, they're gone. As a professionally trained actress, I don't just point and shoot; I apply principles of performance psychology to every video I create. It's about more than just showing a product; it's about conveying an emotion, telling a micro-story, and creating an immediate connection with the viewer.\nThis article pulls back the curtain on my process. I'll share techniques related to pacing, vocal intonation, non-verbal cues, and character archetypes that can be applied to UGC to make it more engaging and persuasive. You'll learn how to structure a video for maximum emotional impact and retention, turning a simple product feature into a must-watch piece of content.",
-      "featuredImage": "/assets/images/psychology-of-scroll-stopping-video.jpg"
-    }
-  ],
-  "powerCardsData": [
-    {
-      "title": "Professional Videographer",
-      "description": "Ensuring every shot is cinematic, stable, and perfectly lit to meet campaign standards.",
-      "videoSrc": "/assets/videos/videographer-preview.mp4"
-    },
-    {
-      "title": "Skilled Editor",
-      "description": "Crafting a dynamic final cut with crisp sound design, color grading, and engaging pacing.",
-      "videoSrc": "/assets/videos/editor-preview.mp4"
-    },
-    {
-      "title": "High-End Equipment",
-      "description": "We shoot on cinema cameras and use a full studio lighting and sound setup for superior quality.",
-      "videoSrc": "/assets/videos/equipment-preview.mp4"
-    }
-  ],
-  "keyStats": [
-    {
-      "key": "Location",
-      "value": "Budapest, Hungary"
-    },
-    {
-      "key": "Languages",
-      "value": "English, Ukrainian, Russian"
-    },
-    {
-      "key": "Age",
-      "value": "21"
-    },
-    {
-      "key": "Primary Niches",
-      "value": "Skincare, Tech, Wellness"
-    },
-    {
-      "key": "Skin Type",
-      "value": "Healthy, clear skin"
-    },
-    {
-      "key": "Hair Type",
-      "value": "Dyed Blonde, Long"
-    },
-    {
-      "key": "Apparel Size",
-      "value": "XXS-XS"
-    },
-    {
-      "key": "Pets",
-      "value": "A dog is planned"
-    }
-  ],
-  "siteSingletonAssets": {
-    "heroBackgroundVideo": "/assets/videos/hero-bg.mp4",
-    "homeIntroImage": "db3bff93-6328-40b5-be94-a4cce1689505",
-    "aboutHeroImage": "/assets/images/about-headshot.png",
-    "aboutAcademicImage": "/assets/images/academic-visual.jpg",
-    "contactVisualImage": "/assets/images/contact-visual.jpg"
-  }
 }

@@ -18,13 +18,13 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     }
 
     const API_URL = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${CONTENT_PATH}`;
-    const headers = {
+    const baseHeaders = {
         'Authorization': `token ${GITHUB_TOKEN}`,
         'Accept': 'application/vnd.github.v3+json',
     };
 
     try {
-        const getFileResponse = await fetch(API_URL, { headers });
+        const getFileResponse = await fetch(API_URL, { headers: baseHeaders });
         if (!getFileResponse.ok && getFileResponse.status !== 404) {
              const errorBody = await getFileResponse.text();
             throw new Error(`Failed to fetch file from GitHub: ${getFileResponse.statusText} - ${errorBody}`);
@@ -49,7 +49,10 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
         const updateFileResponse = await fetch(API_URL, {
             method: 'PUT',
-            headers,
+            headers: {
+                ...baseHeaders,
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify(payload),
         });
 

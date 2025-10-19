@@ -133,6 +133,40 @@ const uploadFile = async (file: File | Blob): Promise<{ key: string }> => {
 };
 
 
+// Reusable video preview component with retry logic for eventual consistency
+const VideoPreview = ({ src, ...props }: { src: string, [key: string]: any }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [retryCount, setRetryCount] = useState(0);
+
+    const handleError = () => {
+        // If the video fails to load, try again up to 3 times with increasing delay.
+        // This can help with eventual consistency issues where the blob isn't immediately available.
+        if (retryCount < 3) {
+            setTimeout(() => {
+                setRetryCount(prev => prev + 1);
+            }, 1500 * (retryCount + 1)); // 1.5s, 3s, 4.5s delay
+        }
+    };
+
+    // When the main src prop changes, reset the retry counter.
+    useEffect(() => {
+        setRetryCount(0);
+    }, [src]);
+
+    // When a retry is triggered, manually tell the video element to load.
+    useEffect(() => {
+        if (retryCount > 0 && videoRef.current) {
+            videoRef.current.load();
+        }
+    }, [retryCount]);
+
+    if (!src) return <div className="custom-placeholder"><span>No Video</span></div>;
+
+    // The key includes the retryCount to force React to re-mount the component on each retry attempt.
+    return <video ref={videoRef} src={getMediaUrl(src)} onError={handleError} key={`${src}-${retryCount}`} {...props} />;
+};
+
+
 export const AdminPage: React.FC<AdminPageProps> = ({ content, setContent, onLogout }) => {
   const [activeSection, setActiveSection] = useState('portfolio-case-studies');
   const [openAccordion, setOpenAccordion] = useState<string | null>('cs-0');
@@ -816,7 +850,7 @@ const PageVisualsEditor = ({ assets, onChange, uploadingStates, setUploadingStat
                                 ) : (
                                     type === 'image' ?
                                         <img src={getMediaUrl(src)} alt={label} key={src} /> :
-                                        <video src={getMediaUrl(src)} muted autoPlay loop playsInline key={src}/>
+                                        <VideoPreview src={src} muted autoPlay loop playsInline />
                                 )}
                             </div>
                             <input
@@ -872,11 +906,9 @@ const FeaturedWorkUGCForm = ({ item, index, onChange }: { item: FeaturedWorkUGC,
         <div className="admin-form">
             <div className="form-section">
                 <label>UGC Video <Tooltip text="9:16 vertical video. Compress for web. Max 20MB is ideal." /></label>
-                {item.videoSrc && (
-                    <div className="image-preview-container">
-                        <video src={getMediaUrl(item.videoSrc)} controls loop muted className="image-preview" key={item.videoSrc}/>
-                    </div>
-                )}
+                <div className="image-preview-container">
+                    <VideoPreview src={item.videoSrc} controls loop muted className="image-preview" />
+                </div>
                 <input type="file" accept="video/*" ref={fileInputRef} onChange={handleVideoUpload} style={{ display: 'none' }} />
                 <button className="upload-button-styled" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
                     {isUploading ? <><Loader className="spinner" size={16}/> Uploading...</> : <><UploadCloud size={16} /> {item.videoSrc ? 'Replace Video' : 'Upload Video'}</>}
@@ -930,11 +962,9 @@ const PowerCardForm = ({ item, index, onChange }: { item: PowerCardData, index: 
         <div className="admin-form">
             <div className="form-section">
                 <label>Preview Video <Tooltip text="16:9 video. Short, looping clip. Compress for web. Max 20MB is ideal." /></label>
-                {item.videoSrc && (
-                    <div className="image-preview-container">
-                        <video src={getMediaUrl(item.videoSrc)} controls loop muted className="image-preview" key={item.videoSrc}/>
-                    </div>
-                )}
+                <div className="image-preview-container">
+                    <VideoPreview src={item.videoSrc} controls loop muted className="image-preview" />
+                </div>
                 <input type="file" accept="video/*" ref={fileInputRef} onChange={handleVideoUpload} style={{ display: 'none' }} />
                 <button className="upload-button-styled" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
                     {isUploading ? <><Loader className="spinner" size={16}/> Uploading...</> : <><UploadCloud size={16} /> {item.videoSrc ? 'Replace Video' : 'Upload Video'}</>}
